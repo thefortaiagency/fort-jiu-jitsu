@@ -147,7 +147,7 @@ export default function SchedulePage() {
                   </li>
                 </ul>
                 <Link
-                  href="/contact"
+                  href="/signup"
                   className="block w-full py-3 text-center bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full font-medium hover:opacity-90 transition-opacity"
                 >
                   Get Started
@@ -188,7 +188,7 @@ export default function SchedulePage() {
                   </li>
                 </ul>
                 <Link
-                  href="/contact"
+                  href="/signup"
                   className="block w-full py-3 text-center bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full font-medium hover:opacity-90 transition-opacity"
                 >
                   Get Started
@@ -315,20 +315,20 @@ export default function SchedulePage() {
               Call us or stop by to begin your Jiu-Jitsu journey.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 bg-white text-[#1b1b1b] px-8 py-4 rounded-full font-medium hover:bg-[#e2e2e2] transition-all hover:scale-105"
+              >
+                Sign Up Now
+                <ArrowRight className="w-5 h-5" />
+              </Link>
               <a
                 href="tel:2604527615"
-                className="inline-flex items-center justify-center gap-2 bg-white text-[#1b1b1b] px-8 py-4 rounded-full font-medium hover:bg-[#e2e2e2] transition-all hover:scale-105"
+                className="inline-flex items-center justify-center gap-2 bg-transparent text-white px-8 py-4 rounded-full font-medium border-2 border-[#5e5e5e] hover:border-white transition-colors"
               >
                 <Phone className="w-5 h-5" />
                 (260) 452-7615
               </a>
-              <Link
-                href="/contact"
-                className="inline-flex items-center justify-center gap-2 bg-transparent text-white px-8 py-4 rounded-full font-medium border-2 border-[#5e5e5e] hover:border-white transition-colors"
-              >
-                Contact Us
-                <ArrowRight className="w-5 h-5" />
-              </Link>
             </div>
           </FadeIn>
         </div>

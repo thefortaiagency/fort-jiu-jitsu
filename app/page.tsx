@@ -129,7 +129,7 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
-              href="/contact"
+              href="/signup"
               className="group inline-flex items-center justify-center gap-2 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-8 py-4 rounded-full font-medium transition-all hover:scale-105 hover:shadow-xl hover:shadow-black/10"
             >
               Start Your Journey
