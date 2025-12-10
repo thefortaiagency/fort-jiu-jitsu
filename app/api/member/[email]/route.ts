@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Create Supabase client directly to avoid any import issues
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase configuration');
+  }
+
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +26,7 @@ export async function GET(
     const { email } = await params;
     const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
 
-    const supabase = createServerSupabaseClient();
+    const supabase = getSupabase();
 
     // Look up member by email
     const { data: member, error: memberError } = await supabase
@@ -161,7 +178,7 @@ export async function PUT(
     const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
     const body = await request.json();
 
-    const supabase = createServerSupabaseClient();
+    const supabase = getSupabase();
 
     // Get member ID first
     const { data: member } = await supabase
