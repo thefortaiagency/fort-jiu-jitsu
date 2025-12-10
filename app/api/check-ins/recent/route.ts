@@ -32,12 +32,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Flatten member data for easier consumption
-    const checkIns = data?.map((checkIn) => ({
-      id: checkIn.id,
-      checked_in_at: checkIn.checked_in_at,
-      check_in_method: checkIn.check_in_method,
-      ...(checkIn.member as Record<string, unknown>),
-    })) || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const checkIns = data?.map((checkIn: any) => {
+      const member = checkIn.member;
+      return {
+        id: checkIn.id,
+        checked_in_at: checkIn.checked_in_at,
+        check_in_method: checkIn.check_in_method,
+        member_id: member?.id,
+        first_name: member?.first_name,
+        last_name: member?.last_name,
+        program: member?.program,
+      };
+    }) || [];
 
     return NextResponse.json({ checkIns });
   } catch (error) {
