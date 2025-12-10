@@ -307,7 +307,7 @@ export default function CheckInKiosk() {
                 src="/jiu-jitsu.png"
                 alt="The Fort Jiu-Jitsu"
                 fill
-                className="object-contain object-left"
+                className="object-contain object-left invert"
                 priority
               />
             </div>
@@ -692,7 +692,7 @@ export default function CheckInKiosk() {
                 src="/jiu-jitsu.png"
                 alt="The Fort"
                 fill
-                className="object-contain opacity-50"
+                className="object-contain opacity-50 invert"
               />
             </div>
             <span>The Fort Jiu-Jitsu</span>

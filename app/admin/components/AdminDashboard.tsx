@@ -168,17 +168,16 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-4">
-              <div className="relative w-14 h-14 md:w-16 md:h-16">
+              <div className="relative w-36 h-10 md:w-48 md:h-14">
                 <Image
                   src="/jiu-jitsu.png"
                   alt="The Fort Jiu-Jitsu"
                   fill
-                  className="object-contain"
+                  className="object-contain object-left invert"
                   priority
                 />
               </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-tight">THE FORT</h1>
+              <div className="border-l border-gray-700 pl-4">
                 <p className="text-gray-400 text-sm">Admin Console</p>
               </div>
             </div>
