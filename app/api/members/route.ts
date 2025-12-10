@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('members')
-      .select('id, first_name, last_name, email, phone, program, status')
+      .select('id, first_name, last_name, email, phone, program, status, qr_code')
       .order('first_name', { ascending: true });
 
     if (status !== 'all') {

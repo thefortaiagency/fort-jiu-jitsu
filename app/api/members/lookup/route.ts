@@ -16,15 +16,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to find member by:
-    // 1. UUID (full member ID)
-    // 2. Last 4 digits of phone number
-    // 3. Email address
-    // 4. Name search (first or last name)
+    // 1. QR code (keychain scan)
+    // 2. UUID (full member ID)
+    // 3. Last 4 digits of phone number
+    // 4. Email address
+    // 5. Name search (first or last name)
 
     let member = null;
 
+    // Try by QR code first (keychain scan)
+    const { data: byQRCode } = await supabase
+      .from('members')
+      .select('id, first_name, last_name, email, phone, program, status')
+      .eq('qr_code', code)
+      .eq('status', 'active')
+      .single();
+
+    if (byQRCode) {
+      member = byQRCode;
+    }
+
     // Try by UUID if it looks like one
-    if (code.length === 36 && code.includes('-')) {
+    if (!member && code.length === 36 && code.includes('-')) {
       const { data: byId } = await supabase
         .from('members')
         .select('id, first_name, last_name, email, phone, program, status')

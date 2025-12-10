@@ -194,6 +194,12 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             >
               Belt Promotions
             </Link>
+            <Link
+              href="/admin/qr-codes"
+              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              QR Codes
+            </Link>
           </div>
         )}
 
