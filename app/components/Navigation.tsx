@@ -81,10 +81,10 @@ export default function Navigation() {
             (260) 452-7615
           </a>
           <Link
-            href="/contact"
+            href="/signup"
             className="bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-all hover:scale-105"
           >
-            Start Training
+            Join Now
           </Link>
         </div>
 
@@ -143,11 +143,11 @@ export default function Navigation() {
                   (260) 452-7615
                 </a>
                 <Link
-                  href="/contact"
+                  href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block w-full bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-6 py-3 rounded-full font-medium text-center"
                 >
-                  Start Training
+                  Join Now
                 </Link>
               </motion.div>
             </div>

@@ -1,0 +1,204 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { stripe } from '@/lib/stripe';
+import { createServerSupabaseClient } from '@/lib/supabase';
+
+const STRIPE_PRICES: Record<string, { priceInCents: number; mode: 'subscription' | 'payment' }> = {
+  kids: { priceInCents: 7500, mode: 'subscription' },
+  adult: { priceInCents: 10000, mode: 'subscription' },
+  'drop-in': { priceInCents: 2000, mode: 'payment' },
+};
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfBirth,
+      membershipType,
+      parentFirstName,
+      parentLastName,
+      parentEmail,
+      parentPhone,
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelationship,
+      medicalConditions,
+      waiverAgreed,
+      signatureData,
+      signerName,
+    } = body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !dateOfBirth || !membershipType) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    if (!waiverAgreed || !signatureData || !signerName) {
+      return NextResponse.json(
+        { error: 'Waiver must be signed' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createServerSupabaseClient();
+
+    // Check if member already exists
+    const { data: existingMember } = await supabase
+      .from('members')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
+    if (existingMember) {
+      return NextResponse.json(
+        { error: 'A member with this email already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Determine if minor
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const isMinor = age < 18;
+
+    // Determine program based on membership type
+    const program = membershipType === 'kids' ? 'kids-bjj' : 'adult-bjj';
+
+    // Create Stripe customer
+    const stripeCustomer = await stripe.customers.create({
+      email: isMinor && parentEmail ? parentEmail : email,
+      name: isMinor
+        ? `${parentFirstName} ${parentLastName} (for ${firstName} ${lastName})`
+        : `${firstName} ${lastName}`,
+      metadata: {
+        member_name: `${firstName} ${lastName}`,
+        membership_type: membershipType,
+        source: 'thefortjiujitsu.com',
+      },
+    });
+
+    // Create member in database
+    const { data: newMember, error: memberError } = await supabase
+      .from('members')
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone || null,
+        birth_date: dateOfBirth,
+        program: program,
+        skill_level: 'beginner',
+        status: 'pending',
+        membership_type: membershipType === 'drop-in' ? 'drop-in' : 'monthly',
+        parent_first_name: isMinor ? parentFirstName : null,
+        parent_last_name: isMinor ? parentLastName : null,
+        parent_email: isMinor ? parentEmail : null,
+        parent_phone: isMinor ? parentPhone : null,
+        emergency_contact_name: emergencyContactName,
+        emergency_contact_phone: emergencyContactPhone,
+        emergency_contact_relationship: emergencyContactRelationship || null,
+        medical_conditions: medicalConditions || null,
+        stripe_customer_id: stripeCustomer.id,
+        payment_status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (memberError) {
+      console.error('Error creating member:', memberError);
+      // Clean up Stripe customer if member creation fails
+      await stripe.customers.del(stripeCustomer.id);
+      return NextResponse.json(
+        { error: 'Failed to create member account' },
+        { status: 500 }
+      );
+    }
+
+    // Store waiver signature
+    const { error: waiverError } = await supabase.from('waivers').insert({
+      member_id: newMember.id,
+      waiver_type: 'liability',
+      waiver_version: '1.0',
+      signer_name: signerName,
+      signer_email: isMinor && parentEmail ? parentEmail : email,
+      signer_relationship: isMinor ? 'parent' : 'self',
+      signature_data: signatureData,
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      user_agent: request.headers.get('user-agent') || 'unknown',
+    });
+
+    if (waiverError) {
+      console.error('Error storing waiver:', waiverError);
+      // Don't fail the whole signup if waiver storage fails - just log it
+    }
+
+    // Get price config
+    const priceConfig = STRIPE_PRICES[membershipType];
+    if (!priceConfig) {
+      return NextResponse.json(
+        { error: 'Invalid membership type' },
+        { status: 400 }
+      );
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://thefortjiujitsu.com';
+
+    // Create Stripe checkout session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      customer: stripeCustomer.id,
+      mode: priceConfig.mode,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: priceConfig.priceInCents,
+            product_data: {
+              name:
+                membershipType === 'kids'
+                  ? 'Kids Gi Classes'
+                  : membershipType === 'adult'
+                  ? 'Adult Gi Classes'
+                  : 'Drop-in Class',
+              description:
+                membershipType === 'kids'
+                  ? 'Brazilian Jiu-Jitsu for kids - Tue & Wed 5:30-6:30 PM'
+                  : membershipType === 'adult'
+                  ? 'Brazilian Jiu-Jitsu for adults - Tue & Wed 6:30-8:00 PM + Morning Rolls'
+                  : 'Single class visit',
+            },
+            ...(priceConfig.mode === 'subscription' && {
+              recurring: { interval: 'month' },
+            }),
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${baseUrl}/signup/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/signup?cancelled=true`,
+      metadata: {
+        member_id: newMember.id,
+        membership_type: membershipType,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      checkoutUrl: checkoutSession.url,
+      memberId: newMember.id,
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Signup failed' },
+      { status: 500 }
+    );
+  }
+}
