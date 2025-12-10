@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ email: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { email: emailParam } = await params;
-    const email = decodeURIComponent(emailParam);
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });

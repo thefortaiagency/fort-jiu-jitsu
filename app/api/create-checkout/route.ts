@@ -110,9 +110,11 @@ export async function POST(request: NextRequest) {
       sessionParams.customer_update = {
         address: 'auto',
       };
-    } else {
+    } else if (mode === 'payment') {
+      // For one-time payments, we can use customer_creation
       sessionParams.customer_creation = 'always';
     }
+    // For subscriptions without a customerId, Stripe will create a customer automatically
 
     // For subscriptions, add subscription-specific parameters
     if (mode === 'subscription') {
