@@ -109,11 +109,14 @@ export default function SignupPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setFormData(parsed);
-        // Resume at appropriate step based on filled data
-        if (parsed.signatureData) setCurrentStep(4);
-        else if (parsed.membershipPlan) setCurrentStep(3);
-        else if (parsed.firstName) setCurrentStep(2);
+        // Only restore if user has actually started the flow (path is selected)
+        if (parsed.path) {
+          setFormData(parsed);
+          // Resume at appropriate step based on filled data
+          if (parsed.signatureData) setCurrentStep(4);
+          else if (parsed.firstName && parsed.email) setCurrentStep(3);
+          else if (parsed.path) setCurrentStep(2);
+        }
       } catch (e) {
         console.error('Failed to parse saved progress');
       }
