@@ -103,26 +103,46 @@ export default function SignupPage() {
   // Save to localStorage on form data change
   useEffect(() => {
     if (formData.path) {
-      localStorage.setItem('fortSignupProgress', JSON.stringify(formData));
+      localStorage.setItem('fortSignupProgress', JSON.stringify({
+        ...formData,
+        _savedAt: Date.now(),
+      }));
     }
   }, [formData]);
 
   // Load from localStorage on mount
   useEffect(() => {
+    // Check for ?fresh=true or ?cancelled=true to start fresh
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('fresh') === 'true' || urlParams.get('cancelled') === 'true') {
+      localStorage.removeItem('fortSignupProgress');
+      // Clean up URL
+      window.history.replaceState({}, '', '/signup');
+      return;
+    }
+
     const saved = localStorage.getItem('fortSignupProgress');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         // Only restore if user has actually started the flow (path is selected)
-        if (parsed.path) {
+        // AND the saved data is less than 24 hours old
+        const savedTime = parsed._savedAt || 0;
+        const isStale = Date.now() - savedTime > 24 * 60 * 60 * 1000; // 24 hours
+
+        if (parsed.path && !isStale) {
           setFormData(parsed);
           // Resume at appropriate step based on filled data
           if (parsed.signatureData) setCurrentStep(4);
           else if (parsed.firstName && parsed.email) setCurrentStep(3);
           else if (parsed.path) setCurrentStep(2);
+        } else if (isStale) {
+          // Clear stale data
+          localStorage.removeItem('fortSignupProgress');
         }
       } catch (e) {
         console.error('Failed to parse saved progress');
+        localStorage.removeItem('fortSignupProgress');
       }
     }
   }, []);

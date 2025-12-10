@@ -12,7 +12,6 @@ const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/schedule', label: 'Schedule' },
   { href: '/instructors', label: 'Instructors' },
-  { href: '/signup', label: 'Sign Up' },
   { href: '/contact', label: 'Contact' },
   { href: '/member', label: 'Member Portal' },
 ];
