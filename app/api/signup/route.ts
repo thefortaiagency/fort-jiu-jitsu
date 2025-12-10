@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
       signatureData,
       signerName,
       linkToParentId, // Optional: for family member signup flow
+      promoCode, // Optional: discount/coupon code
     } = body;
 
     // Validate required fields
@@ -220,8 +222,19 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://thefortjiujitsu.com';
 
-    // Create Stripe checkout session
-    const checkoutSession = await stripe.checkout.sessions.create({
+    // Map promo codes to Stripe coupon IDs
+    const PROMO_CODE_MAP: Record<string, string> = {
+      TEST1: 'TEST_1_DOLLAR',
+      TESTFREE: 'TEST_FREE',
+      FAMILY_DISCOUNT_25: 'FAMILY_DISCOUNT_25',
+      FIRST_WEEK_FREE: 'FIRST_WEEK_FREE',
+      GRAND_OPENING_50: 'GRAND_OPENING_50',
+      GRANDOPENING: 'GRAND_OPENING_50',
+      FOUNDER: 'FOUNDER_DISCOUNT',
+    };
+
+    // Build checkout session params
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       customer: stripeCustomerId,
       mode: priceConfig.mode,
       payment_method_types: ['card'],
@@ -256,8 +269,30 @@ export async function POST(request: NextRequest) {
       metadata: {
         member_id: newMember.id,
         membership_type: membershipType,
+        promo_code: promoCode || '',
       },
-    });
+    };
+
+    // Apply promo code if provided
+    if (promoCode) {
+      const couponId = PROMO_CODE_MAP[promoCode.toUpperCase()] || promoCode.toUpperCase();
+      try {
+        // Verify the coupon exists in Stripe
+        await stripe.coupons.retrieve(couponId);
+        checkoutParams.discounts = [{ coupon: couponId }];
+      } catch {
+        // Coupon doesn't exist - allow checkout to proceed without it
+        console.warn(`Coupon ${couponId} not found in Stripe, proceeding without discount`);
+        // Still allow promotion codes to be entered at checkout
+        checkoutParams.allow_promotion_codes = true;
+      }
+    } else {
+      // Allow users to enter promo codes at checkout if they didn't provide one
+      checkoutParams.allow_promotion_codes = true;
+    }
+
+    // Create Stripe checkout session
+    const checkoutSession = await stripe.checkout.sessions.create(checkoutParams);
 
     return NextResponse.json({
       success: true,

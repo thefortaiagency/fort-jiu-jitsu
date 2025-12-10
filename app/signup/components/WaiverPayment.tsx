@@ -4,13 +4,19 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FormData } from '../page';
 import SignaturePad from './SignaturePad';
-import { CheckCircle, Lock, Shield } from 'lucide-react';
+import { CheckCircle, Lock, Shield, Tag, Check, X, Loader2 } from 'lucide-react';
 
 interface WaiverPaymentProps {
   formData: FormData;
-  onComplete: (signatureData: string, signerName: string) => void;
+  onComplete: (signatureData: string, signerName: string, promoCode?: string) => void;
   onBack: () => void;
   isLoading: boolean;
+}
+
+interface PromoCodeValidation {
+  valid: boolean;
+  discount?: string;
+  message?: string;
 }
 
 export default function WaiverPayment({ formData, onComplete, onBack, isLoading }: WaiverPaymentProps) {
@@ -18,6 +24,12 @@ export default function WaiverPayment({ formData, onComplete, onBack, isLoading 
   const [signatureData, setSignatureData] = useState<string | null>(formData.signatureData);
   const [signerName, setSignerName] = useState(formData.signerName);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Promo code state
+  const [promoCode, setPromoCode] = useState(formData.promoCode || '');
+  const [promoValidation, setPromoValidation] = useState<PromoCodeValidation | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [showPromoInput, setShowPromoInput] = useState(false);
 
   // Determine if member is a minor
   const isMinor = () => {
@@ -69,9 +81,51 @@ export default function WaiverPayment({ formData, onComplete, onBack, isLoading 
     return Object.keys(newErrors).length === 0;
   };
 
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoValidation({ valid: false, message: 'Please enter a promo code' });
+      return;
+    }
+
+    setIsValidatingPromo(true);
+    try {
+      const response = await fetch('/api/validate-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase() }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.valid) {
+        setPromoValidation({
+          valid: true,
+          discount: data.discount,
+          message: data.message,
+        });
+      } else {
+        setPromoValidation({
+          valid: false,
+          message: data.error || 'Invalid promo code',
+        });
+      }
+    } catch {
+      setPromoValidation({
+        valid: false,
+        message: 'Failed to validate promo code',
+      });
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
+
+  const clearPromoCode = () => {
+    setPromoCode('');
+    setPromoValidation(null);
+  };
+
   const handleSubmit = () => {
     if (validate() && signatureData) {
-      onComplete(signatureData, signerName);
+      onComplete(signatureData, signerName, promoValidation?.valid ? promoCode.trim().toUpperCase() : undefined);
     }
   };
 
@@ -136,6 +190,79 @@ export default function WaiverPayment({ formData, onComplete, onBack, isLoading 
 
             {formData.billingPeriod === 'annual' && formData.membershipPlan !== 'drop-in' && (
               <div className="text-sm text-green-500 text-right">Save 2 months with annual billing</div>
+            )}
+          </div>
+
+          {/* Promo Code Section */}
+          <div className="pt-4 border-t border-gray-700">
+            {!showPromoInput && !promoValidation?.valid ? (
+              <button
+                type="button"
+                onClick={() => setShowPromoInput(true)}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                <Tag className="w-4 h-4" />
+                Have a promo code?
+              </button>
+            ) : promoValidation?.valid ? (
+              <div className="flex items-center justify-between bg-green-900/20 border border-green-700 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-500" />
+                  <div>
+                    <span className="font-medium text-green-400">{promoCode.toUpperCase()}</span>
+                    <span className="text-sm text-gray-400 ml-2">- {promoValidation.discount}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearPromoCode}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => {
+                      setPromoCode(e.target.value.toUpperCase());
+                      setPromoValidation(null);
+                    }}
+                    placeholder="Enter promo code"
+                    className="flex-1 px-4 py-2 bg-black border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white text-sm uppercase"
+                    disabled={isValidatingPromo}
+                  />
+                  <button
+                    type="button"
+                    onClick={validatePromoCode}
+                    disabled={isValidatingPromo || !promoCode.trim()}
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  >
+                    {isValidatingPromo ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPromoInput(false);
+                      setPromoCode('');
+                      setPromoValidation(null);
+                    }}
+                    className="px-2 text-gray-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {promoValidation && !promoValidation.valid && (
+                  <p className="text-sm text-red-500">{promoValidation.message}</p>
+                )}
+              </div>
             )}
           </div>
         </div>

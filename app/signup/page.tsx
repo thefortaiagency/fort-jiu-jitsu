@@ -33,6 +33,9 @@ export interface FormData {
   email: string;
   phone: string;
 
+  // Promo code
+  promoCode: string;
+
   // For individual/primary member
   firstName: string;
   lastName: string;
@@ -69,6 +72,7 @@ const initialFormData: FormData = {
   path: null,
   email: '',
   phone: '',
+  promoCode: '',
   firstName: '',
   lastName: '',
   dateOfBirth: '',
@@ -167,7 +171,7 @@ export default function SignupPage() {
     nextStep();
   };
 
-  const handleWaiverComplete = async (signatureData: string, signerName: string) => {
+  const handleWaiverComplete = async (signatureData: string, signerName: string, promoCode?: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -195,6 +199,7 @@ export default function SignupPage() {
         signerName,
         billingPeriod: formData.billingPeriod,
         familyMembers: formData.familyMembers,
+        promoCode: promoCode || undefined,
       };
 
       // Call signup API
