@@ -3,6 +3,7 @@
 import { ArrowRight, MapPin, Phone, Users, Shield, Swords, ChevronDown, Menu, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function Home() {
@@ -13,8 +14,17 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#e2e2e2] dark:border-[#303030]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="font-serif text-xl md:text-2xl font-bold tracking-tight text-[#1b1b1b] dark:text-white">
-            The Fort Jiu-Jitsu
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/jiu-jitsu.png"
+              alt="The Fort Jiu-Jitsu"
+              width={50}
+              height={50}
+              className="dark:invert"
+            />
+            <span className="font-serif text-xl md:text-2xl font-bold tracking-tight text-[#1b1b1b] dark:text-white hidden sm:inline">
+              The Fort Jiu-Jitsu
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -339,7 +349,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
             {/* Anton */}
             <div className="p-6 md:p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
               <div className="w-20 h-20 rounded-full bg-[#e2e2e2] dark:bg-[#303030] mx-auto mb-6 flex items-center justify-center">
@@ -348,7 +358,7 @@ export default function Home() {
               <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-2 text-center">
                 Anton Talamantes
               </h3>
-              <p className="text-sm text-[#777777] text-center mb-4">"El Terrible"</p>
+              <p className="text-sm text-[#777777] text-center mb-4">Black Belt | "El Terrible"</p>
               <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed text-center">
                 37 years wrestling experience. 18 years Jiu-Jitsu. Two-time state champion wrestler.
                 Professional MMA career. A true legend in Fort Wayne martial arts.
@@ -367,21 +377,6 @@ export default function Home() {
               <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed text-center">
                 Marine and Army veteran. Three tours in Iraq. Discovered Jiu-Jitsu as a path to healing.
                 Passionate about working with beginners and children.
-              </p>
-            </div>
-
-            {/* Andrew */}
-            <div className="p-6 md:p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
-              <div className="w-20 h-20 rounded-full bg-[#e2e2e2] dark:bg-[#303030] mx-auto mb-6 flex items-center justify-center">
-                <span className="font-serif text-2xl font-bold text-[#1b1b1b] dark:text-white">AO</span>
-              </div>
-              <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-2 text-center">
-                Andrew Oberlin
-              </h3>
-              <p className="text-sm text-[#777777] text-center mb-4">Founder</p>
-              <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed text-center">
-                35+ years wrestling experience. Visionary behind The Fort Wrestling Facility and
-                The Fort Jiu-Jitsu. Dedicated to building great people, not just great fighters.
               </p>
             </div>
           </div>
@@ -483,8 +478,17 @@ export default function Home() {
       <footer className="py-12 md:py-16 bg-white dark:bg-[#0a0a0a] border-t border-[#e2e2e2] dark:border-[#303030]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white">
-              The Fort Jiu-Jitsu
+            <div className="flex items-center gap-3">
+              <Image
+                src="/jiu-jitsu.png"
+                alt="The Fort Jiu-Jitsu"
+                width={40}
+                height={40}
+                className="dark:invert"
+              />
+              <span className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white">
+                The Fort Jiu-Jitsu
+              </span>
             </div>
             <div className="flex items-center gap-6 md:gap-8 text-[#5e5e5e] dark:text-[#b9b9b9]">
               <Link href="#about" className="hover:text-[#1b1b1b] dark:hover:text-white transition-colors">
