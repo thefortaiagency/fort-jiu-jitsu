@@ -259,11 +259,11 @@ export default function CheckInKiosk() {
 
   const getProgramColor = (program: string) => {
     const p = program?.toLowerCase() || '';
-    if (p.includes('kids') || p.includes('youth')) return 'from-blue-600 to-blue-800';
-    if (p.includes('adult')) return 'from-purple-600 to-purple-800';
-    if (p.includes('comp') || p.includes('competition')) return 'from-red-600 to-red-800';
-    if (p.includes('women')) return 'from-pink-600 to-pink-800';
-    return 'from-gray-600 to-gray-800';
+    if (p.includes('kids') || p.includes('youth')) return 'from-sky-600 to-sky-800';
+    if (p.includes('adult')) return 'from-slate-600 to-slate-800';
+    if (p.includes('comp') || p.includes('competition')) return 'from-amber-600 to-amber-800';
+    if (p.includes('women')) return 'from-rose-500 to-rose-700';
+    return 'from-zinc-600 to-zinc-800';
   };
 
   const getProgramIcon = (program: string) => {
@@ -280,9 +280,22 @@ export default function CheckInKiosk() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
+      {/* Watermark Logo Background */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] opacity-[0.03]">
+          <Image
+            src="/jiu-jitsu.png"
+            alt=""
+            fill
+            className="object-contain invert"
+            priority
+          />
+        </div>
+      </div>
+
       {/* Header with Logo */}
-      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 px-4 py-4 md:py-6 sticky top-0 z-40">
+      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 px-4 py-4 md:py-6 sticky top-0 z-40 relative">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative w-16 h-16 md:w-20 md:h-20">
@@ -308,7 +321,7 @@ export default function CheckInKiosk() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 md:py-10 pb-32">
+      <main className="max-w-5xl mx-auto px-4 py-6 md:py-10 pb-32 relative z-10">
         {/* Success/Error Message - Full Screen Overlay */}
         <AnimatePresence>
           {checkInResult && (
@@ -663,15 +676,15 @@ export default function CheckInKiosk() {
             </p>
             <p className="text-gray-400 mt-2 text-sm md:text-base">Today&apos;s Check-ins</p>
           </div>
-          <div className="bg-gradient-to-br from-purple-900/30 to-purple-950/30 border border-purple-800/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
-            <p className="text-4xl md:text-6xl font-bold text-purple-400">{activeMembers.length}</p>
+          <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
+            <p className="text-4xl md:text-6xl font-bold text-white">{activeMembers.length}</p>
             <p className="text-gray-400 mt-2 text-sm md:text-base">Active Members</p>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800/50 px-4 py-4">
+      <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800/50 px-4 py-4 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between text-sm md:text-base text-gray-500">
           <div className="flex items-center gap-3">
             <div className="relative w-8 h-8">
