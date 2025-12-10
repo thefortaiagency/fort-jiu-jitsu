@@ -31,10 +31,10 @@ export async function GET(
 
     const { data: checkIns, error: checkInsError } = await supabase
       .from('check_ins')
-      .select('id, check_in_time, class_type')
+      .select('id, checked_in_at, class_id')
       .eq('member_id', memberId)
-      .gte('check_in_time', thirtyDaysAgo.toISOString())
-      .order('check_in_time', { ascending: false });
+      .gte('checked_in_at', thirtyDaysAgo.toISOString())
+      .order('checked_in_at', { ascending: false });
 
     if (checkInsError) {
       console.error('Check-ins fetch error:', checkInsError);
@@ -50,14 +50,14 @@ export async function GET(
     startOfMonth.setHours(0, 0, 0, 0);
 
     const thisMonthCount = checkIns?.filter(
-      (c) => new Date(c.check_in_time) >= startOfMonth
+      (c) => new Date(c.checked_in_at) >= startOfMonth
     ).length || 0;
 
     // Transform check-ins data
     const checkInsData = (checkIns || []).map((checkIn) => ({
       id: checkIn.id,
-      checkInTime: checkIn.check_in_time,
-      classType: checkIn.class_type || 'general',
+      checkInTime: checkIn.checked_in_at,
+      classType: 'general',
     }));
 
     return NextResponse.json({
