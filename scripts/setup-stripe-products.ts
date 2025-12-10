@@ -18,8 +18,11 @@
 import Stripe from 'stripe';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -201,14 +204,21 @@ async function createOrUpdateProduct(
   // Create prices
   const prices: Record<string, Stripe.Price> = {};
 
+  // Get all existing prices for this product
+  const existingPrices = await stripe.prices.list({
+    product: product.id,
+    active: true,
+    limit: 100,
+  });
+
   // Monthly price
   if (config.prices.monthly) {
-    const existingMonthly = await stripe.prices.search({
-      query: `product:'${product.id}' AND active:'true' AND type:'recurring' AND recurring.interval:'month'`,
-    });
+    const existingMonthly = existingPrices.data.find(
+      (p) => p.type === 'recurring' && p.recurring?.interval === 'month'
+    );
 
-    if (existingMonthly.data.length > 0) {
-      prices.monthly = existingMonthly.data[0];
+    if (existingMonthly) {
+      prices.monthly = existingMonthly;
       log(
         `  ✓ Monthly price exists: ${formatCurrency(prices.monthly.unit_amount!)}/month (ID: ${prices.monthly.id})`,
         'yellow'
@@ -235,12 +245,12 @@ async function createOrUpdateProduct(
 
   // Annual price
   if (config.prices.annual) {
-    const existingAnnual = await stripe.prices.search({
-      query: `product:'${product.id}' AND active:'true' AND type:'recurring' AND recurring.interval:'year'`,
-    });
+    const existingAnnual = existingPrices.data.find(
+      (p) => p.type === 'recurring' && p.recurring?.interval === 'year'
+    );
 
-    if (existingAnnual.data.length > 0) {
-      prices.annual = existingAnnual.data[0];
+    if (existingAnnual) {
+      prices.annual = existingAnnual;
       log(
         `  ✓ Annual price exists: ${formatCurrency(prices.annual.unit_amount!)}/year (ID: ${prices.annual.id})`,
         'yellow'
@@ -270,12 +280,10 @@ async function createOrUpdateProduct(
 
   // One-time price
   if (config.prices.oneTime) {
-    const existingOneTime = await stripe.prices.search({
-      query: `product:'${product.id}' AND active:'true' AND type:'one_time'`,
-    });
+    const existingOneTime = existingPrices.data.find((p) => p.type === 'one_time');
 
-    if (existingOneTime.data.length > 0) {
-      prices.oneTime = existingOneTime.data[0];
+    if (existingOneTime) {
+      prices.oneTime = existingOneTime;
       log(
         `  ✓ One-time price exists: ${formatCurrency(prices.oneTime.unit_amount!)} (ID: ${prices.oneTime.id})`,
         'yellow'
@@ -395,17 +403,15 @@ async function setupStripeProducts() {
 }
 
 // Run the setup
-if (require.main === module) {
-  setupStripeProducts()
-    .then(() => {
-      log('\n✓ Script completed successfully!\n', 'green');
-      process.exit(0);
-    })
-    .catch((error) => {
-      log('\n❌ Script failed:', 'red');
-      console.error(error);
-      process.exit(1);
-    });
-}
+setupStripeProducts()
+  .then(() => {
+    log('\n✓ Script completed successfully!\n', 'green');
+    process.exit(0);
+  })
+  .catch((error) => {
+    log('\n❌ Script failed:', 'red');
+    console.error(error);
+    process.exit(1);
+  });
 
 export { setupStripeProducts };

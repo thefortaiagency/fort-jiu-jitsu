@@ -17,22 +17,22 @@ export interface StripeProduct {
 
 export const STRIPE_PRODUCTS: Record<string, StripeProduct> = {
   KIDS_BJJ: {
-    productId: 'prod_XXXXXXXXXXXXXXXX', // Replace after running setup script
-    monthlyPriceId: 'price_XXXXXXXXXXXXXXXX', // $75/month
-    annualPriceId: 'price_XXXXXXXXXXXXXXXX', // $750/year (save $150)
+    productId: 'prod_TZsDC211IgXUm4',
+    monthlyPriceId: 'price_1SciTWASerE5d23FJzvW2zfd', // $75/month
+    annualPriceId: 'price_1SciTWASerE5d23FsJCBpnzQ', // $750/year (save $150)
   },
   ADULT_BJJ: {
-    productId: 'prod_XXXXXXXXXXXXXXXX', // Replace after running setup script
-    monthlyPriceId: 'price_XXXXXXXXXXXXXXXX', // $100/month
-    annualPriceId: 'price_XXXXXXXXXXXXXXXX', // $1000/year (save $200)
+    productId: 'prod_TZsDsDCuozLAlI',
+    monthlyPriceId: 'price_1SciTXASerE5d23FHR2D1yiJ', // $100/month
+    annualPriceId: 'price_1SciTYASerE5d23FWnOseDhi', // $1000/year (save $200)
   },
   FAMILY_PLAN: {
-    productId: 'prod_XXXXXXXXXXXXXXXX', // Replace after running setup script
-    monthlyPriceId: 'price_XXXXXXXXXXXXXXXX', // $150/month
+    productId: 'prod_TZsEek5X6N7h7E',
+    monthlyPriceId: 'price_1SciTYASerE5d23FRqhclOuM', // $150/month
   },
   DROP_IN: {
-    productId: 'prod_XXXXXXXXXXXXXXXX', // Replace after running setup script
-    oneTimePriceId: 'price_XXXXXXXXXXXXXXXX', // $20 one-time
+    productId: 'prod_TZsEoSTBkNwcpf',
+    oneTimePriceId: 'price_1SciTZASerE5d23FpjQ8ozhJ', // $20 one-time
   },
 };
 
