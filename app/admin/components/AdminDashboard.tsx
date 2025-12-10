@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase-auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { User } from '@supabase/supabase-js';
 import type { Member } from '@/lib/supabase';
 import MemberList from './MemberList';
 import MemberDetail from './MemberDetail';
 import MemberForm from './MemberForm';
+import { Users, ClipboardCheck, FileCheck, Calendar, Award, QrCode, LogOut } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: User;
@@ -137,90 +139,104 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
     setSelectedMember(null);
   };
 
+  const navItems = [
+    { href: '/admin', label: 'Members', icon: Users, active: true },
+    { href: '/admin/check-ins', label: 'Check-ins', icon: ClipboardCheck, active: false },
+    { href: '/admin/waivers', label: 'Waivers', icon: FileCheck, active: false },
+    { href: '/admin/classes', label: 'Classes', icon: Calendar, active: false },
+    { href: '/admin/promotions', label: 'Promotions', icon: Award, active: false },
+    { href: '/admin/qr-codes', label: 'QR Codes', icon: QrCode, active: false },
+  ];
+
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
+      {/* Watermark Logo Background */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] opacity-[0.02]">
+          <Image
+            src="/jiu-jitsu.png"
+            alt=""
+            fill
+            className="object-contain invert"
+            priority
+          />
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800">
+      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-serif">THE FORT</h1>
-              <p className="text-gray-400 text-sm">Admin Console</p>
+            <div className="flex items-center gap-4">
+              <div className="relative w-14 h-14 md:w-16 md:h-16">
+                <Image
+                  src="/jiu-jitsu.png"
+                  alt="The Fort Jiu-Jitsu"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-tight">THE FORT</h1>
+                <p className="text-gray-400 text-sm">Admin Console</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-gray-400 text-sm">{user.email}</span>
+              <span className="text-gray-400 text-sm hidden md:block">{user.email}</span>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-700 rounded-xl hover:bg-gray-800 transition-colors"
               >
-                Sign Out
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Navigation Cards */}
         {view === 'list' && (
-          <div className="flex flex-wrap gap-3 mb-8">
-            <Link
-              href="/admin"
-              className="px-4 py-2 bg-white text-black font-medium rounded-lg"
-            >
-              Members
-            </Link>
-            <Link
-              href="/admin/check-ins"
-              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Check-ins
-            </Link>
-            <Link
-              href="/admin/waivers"
-              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Waivers
-            </Link>
-            <Link
-              href="/admin/classes"
-              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Classes
-            </Link>
-            <Link
-              href="/admin/promotions"
-              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Belt Promotions
-            </Link>
-            <Link
-              href="/admin/qr-codes"
-              className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              QR Codes
-            </Link>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4 mb-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-2 p-3 md:p-4 rounded-xl md:rounded-2xl transition-all ${
+                  item.active
+                    ? 'bg-white text-black shadow-lg shadow-white/10'
+                    : 'bg-gray-900/80 border border-gray-800 hover:bg-gray-800/80 hover:border-gray-700 text-white'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 md:w-6 md:h-6 ${item.active ? 'text-black' : 'text-gray-400'}`} />
+                <span className={`text-xs md:text-sm font-medium ${item.active ? 'text-black' : 'text-gray-300'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            ))}
           </div>
         )}
 
         {/* Stats Cards */}
         {view === 'list' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-              <p className="text-gray-400 text-sm">Total Members</p>
-              <p className="text-3xl font-bold">{stats.totalMembers}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-5 md:p-6">
+              <p className="text-gray-400 text-sm mb-1">Total Members</p>
+              <p className="text-3xl md:text-4xl font-bold text-white">{stats.totalMembers}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-              <p className="text-gray-400 text-sm">Active Members</p>
-              <p className="text-3xl font-bold text-green-400">{stats.activeMembers}</p>
+            <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 border border-green-800/50 rounded-2xl p-5 md:p-6">
+              <p className="text-gray-400 text-sm mb-1">Active Members</p>
+              <p className="text-3xl md:text-4xl font-bold text-green-400">{stats.activeMembers}</p>
             </div>
-            <Link href="/admin/waivers" className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-yellow-400 transition-colors">
-              <p className="text-gray-400 text-sm">Pending Waivers</p>
-              <p className="text-3xl font-bold text-yellow-400">{stats.pendingWaivers}</p>
+            <Link href="/admin/waivers" className="bg-gradient-to-br from-amber-900/30 to-amber-950/30 border border-amber-800/50 rounded-2xl p-5 md:p-6 hover:border-amber-600 transition-colors">
+              <p className="text-gray-400 text-sm mb-1">Pending Waivers</p>
+              <p className="text-3xl md:text-4xl font-bold text-amber-400">{stats.pendingWaivers}</p>
             </Link>
-            <Link href="/admin/check-ins" className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-blue-400 transition-colors">
-              <p className="text-gray-400 text-sm">Checked In Today</p>
-              <p className="text-3xl font-bold text-blue-400">{stats.checkedInToday}</p>
+            <Link href="/admin/check-ins" className="bg-gradient-to-br from-sky-900/30 to-sky-950/30 border border-sky-800/50 rounded-2xl p-5 md:p-6 hover:border-sky-600 transition-colors">
+              <p className="text-gray-400 text-sm mb-1">Checked In Today</p>
+              <p className="text-3xl md:text-4xl font-bold text-sky-400">{stats.checkedInToday}</p>
             </Link>
           </div>
         )}
