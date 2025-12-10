@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-auth';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 // GET - List all active members
 export async function GET(request: NextRequest) {

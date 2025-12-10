@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-auth';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 // GET - Lookup member by barcode/member code
 export async function GET(request: NextRequest) {
