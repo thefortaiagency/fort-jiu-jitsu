@@ -1,34 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
-// Create Supabase client directly to avoid any import issues
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration');
-  }
-
-  return createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+// Helper to determine if the param is an email or UUID
+function isEmail(value: string): boolean {
+  return value.includes('@') || value.includes('%40');
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ email: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { email } = await params;
-    const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
+    const { id } = await params;
+    const decodedId = decodeURIComponent(id);
 
-    const supabase = getSupabase();
+    const supabase = createServerSupabaseClient();
 
-    // Look up member by email
+    // Determine if looking up by email or UUID
+    const lookupField = isEmail(decodedId) ? 'email' : 'id';
+    const lookupValue = isEmail(decodedId) ? decodedId.toLowerCase().trim() : decodedId;
+
+    // Look up member
     const { data: member, error: memberError } = await supabase
       .from('members')
       .select(`
@@ -60,7 +52,7 @@ export async function GET(
         created_at,
         updated_at
       `)
-      .eq('email', decodedEmail)
+      .eq(lookupField, lookupValue)
       .single();
 
     if (memberError || !member) {
@@ -171,20 +163,24 @@ export async function GET(
 // PUT - Update member profile
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ email: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { email } = await params;
-    const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
+    const { id } = await params;
+    const decodedId = decodeURIComponent(id);
     const body = await request.json();
 
-    const supabase = getSupabase();
+    const supabase = createServerSupabaseClient();
+
+    // Determine if looking up by email or UUID
+    const lookupField = isEmail(decodedId) ? 'email' : 'id';
+    const lookupValue = isEmail(decodedId) ? decodedId.toLowerCase().trim() : decodedId;
 
     // Get member ID first
     const { data: member } = await supabase
       .from('members')
       .select('id')
-      .eq('email', decodedEmail)
+      .eq(lookupField, lookupValue)
       .single();
 
     if (!member) {
