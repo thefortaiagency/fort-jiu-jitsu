@@ -1,8 +1,21 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, CheckCircle, XCircle, User, Users, QrCode, Camera, Keyboard } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  User,
+  Users,
+  QrCode,
+  Camera,
+  Keyboard,
+  Sparkles,
+  Shield,
+} from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
+import Image from 'next/image';
 
 interface Member {
   id: string;
@@ -30,6 +43,7 @@ export default function CheckInKiosk() {
   const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [todayCount, setTodayCount] = useState(0);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
@@ -65,12 +79,10 @@ export default function CheckInKiosk() {
           aspectRatio: 1.0,
         },
         async (decodedText) => {
-          // Successfully scanned
           console.log('Scanned:', decodedText);
           await handleScannedCode(decodedText);
         },
         (errorMessage) => {
-          // Ignore scan errors (no code detected)
           console.debug('Scan attempt:', errorMessage);
         }
       );
@@ -101,7 +113,6 @@ export default function CheckInKiosk() {
   // Start/stop scanner based on mode
   useEffect(() => {
     if (mode === 'scan') {
-      // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
         startScanner();
       }, 100);
@@ -130,6 +141,7 @@ export default function CheckInKiosk() {
       const res = await fetch('/api/check-ins/recent?limit=5');
       const data = await res.json();
       setRecentCheckIns(data.checkIns || []);
+      setTodayCount(data.todayCount || data.checkIns?.length || 0);
     } catch (error) {
       console.error('Failed to load recent check-ins:', error);
     }
@@ -157,9 +169,8 @@ export default function CheckInKiosk() {
           member,
           message: `Welcome, ${member.first_name}!`,
         });
-        // Add to recent check-ins
         setRecentCheckIns((prev) => [member, ...prev.slice(0, 4)]);
-        // Reload recent check-ins to get accurate count
+        setTodayCount((prev) => prev + 1);
         loadRecentCheckIns();
       } else {
         setCheckInResult({
@@ -180,17 +191,15 @@ export default function CheckInKiosk() {
       setSearchQuery('');
       setBarcodeInput('');
 
-      // Clear result after 3 seconds
       setTimeout(() => {
         setCheckInResult(null);
-      }, 3000);
+      }, 4000);
     }
   }
 
   async function handleScannedCode(code: string) {
     if (isLoading) return;
 
-    // Stop scanner temporarily
     await stopScanner();
     setIsLoading(true);
 
@@ -207,7 +216,6 @@ export default function CheckInKiosk() {
         });
         setTimeout(() => {
           setCheckInResult(null);
-          // Restart scanner after error
           if (mode === 'scan') {
             startScanner();
           }
@@ -249,290 +257,434 @@ export default function CheckInKiosk() {
 
   const activeMembers = filteredMembers.filter((m) => m.status === 'active');
 
+  const getProgramColor = (program: string) => {
+    const p = program?.toLowerCase() || '';
+    if (p.includes('kids') || p.includes('youth')) return 'from-blue-600 to-blue-800';
+    if (p.includes('adult')) return 'from-purple-600 to-purple-800';
+    if (p.includes('comp') || p.includes('competition')) return 'from-red-600 to-red-800';
+    if (p.includes('women')) return 'from-pink-600 to-pink-800';
+    return 'from-gray-600 to-gray-800';
+  };
+
+  const getProgramIcon = (program: string) => {
+    const p = program?.toLowerCase() || '';
+    if (p.includes('kids') || p.includes('youth')) return Sparkles;
+    if (p.includes('comp') || p.includes('competition')) return Shield;
+    return User;
+  };
+
+  const modeButtons = [
+    { id: 'dropdown' as const, label: 'Find Name', icon: Users, desc: 'Search members' },
+    { id: 'scan' as const, label: 'Scan Code', icon: Camera, desc: 'Use camera' },
+    { id: 'manual' as const, label: 'Type Code', icon: Keyboard, desc: 'Enter manually' },
+  ];
+
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-serif font-bold">THE FORT</h1>
-            <p className="text-gray-400">Member Check-In</p>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+      {/* Header with Logo */}
+      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 px-4 py-4 md:py-6 sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative w-16 h-16 md:w-20 md:h-20">
+              <Image
+                src="/jiu-jitsu.png"
+                alt="The Fort Jiu-Jitsu"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-4xl font-serif font-bold tracking-tight">THE FORT</h1>
+              <p className="text-gray-400 text-sm md:text-base">Member Check-In</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMode('dropdown')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                mode === 'dropdown'
-                  ? 'bg-white text-black'
-                  : 'border border-gray-700 hover:bg-gray-800'
-              }`}
-            >
-              <Users className="w-5 h-5" />
-              <span className="hidden sm:inline">Name</span>
-            </button>
-            <button
-              onClick={() => setMode('scan')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                mode === 'scan'
-                  ? 'bg-white text-black'
-                  : 'border border-gray-700 hover:bg-gray-800'
-              }`}
-            >
-              <Camera className="w-5 h-5" />
-              <span className="hidden sm:inline">Camera</span>
-            </button>
-            <button
-              onClick={() => setMode('manual')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                mode === 'manual'
-                  ? 'bg-white text-black'
-                  : 'border border-gray-700 hover:bg-gray-800'
-              }`}
-            >
-              <Keyboard className="w-5 h-5" />
-              <span className="hidden sm:inline">Type</span>
-            </button>
+
+          {/* Stats Badge */}
+          <div className="bg-gradient-to-r from-green-900/50 to-green-800/50 border border-green-700/50 rounded-2xl px-4 py-2 md:px-6 md:py-3">
+            <p className="text-3xl md:text-4xl font-bold text-green-400">{todayCount}</p>
+            <p className="text-xs md:text-sm text-green-300/70">Today</p>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-24">
-        {/* Success/Error Message */}
-        {checkInResult && (
-          <div
-            className={`mb-8 p-6 rounded-2xl flex items-center gap-4 ${
-              checkInResult.success
-                ? 'bg-green-900/50 border-2 border-green-500'
-                : 'bg-red-900/50 border-2 border-red-500'
-            }`}
-          >
-            {checkInResult.success ? (
-              <CheckCircle className="w-16 h-16 text-green-400 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-16 h-16 text-red-400 flex-shrink-0" />
-            )}
-            <div>
-              <p
-                className={`text-2xl font-bold ${
-                  checkInResult.success ? 'text-green-400' : 'text-red-400'
+      <main className="max-w-5xl mx-auto px-4 py-6 md:py-10 pb-32">
+        {/* Success/Error Message - Full Screen Overlay */}
+        <AnimatePresence>
+          {checkInResult && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className={`w-full max-w-lg p-8 md:p-12 rounded-3xl text-center ${
+                  checkInResult.success
+                    ? 'bg-gradient-to-br from-green-900 to-green-950 border-2 border-green-500'
+                    : 'bg-gradient-to-br from-red-900 to-red-950 border-2 border-red-500'
                 }`}
               >
-                {checkInResult.message}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                >
+                  {checkInResult.success ? (
+                    <CheckCircle className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 text-green-400" />
+                  ) : (
+                    <XCircle className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 text-red-400" />
+                  )}
+                </motion.div>
+                <h2
+                  className={`text-3xl md:text-5xl font-bold mb-4 ${
+                    checkInResult.success ? 'text-green-300' : 'text-red-300'
+                  }`}
+                >
+                  {checkInResult.message}
+                </h2>
+                {checkInResult.member && (
+                  <p className="text-xl md:text-2xl text-gray-300 capitalize">
+                    {checkInResult.member.program?.replace('-', ' ')} Program
+                  </p>
+                )}
+                <p className="text-gray-500 mt-6 text-sm">This will close automatically...</p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mode Selection Cards */}
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8">
+          {modeButtons.map((btn) => (
+            <motion.button
+              key={btn.id}
+              onClick={() => setMode(btn.id)}
+              whileTap={{ scale: 0.95 }}
+              className={`relative p-4 md:p-8 rounded-2xl md:rounded-3xl transition-all duration-300 ${
+                mode === btn.id
+                  ? 'bg-white text-black shadow-2xl shadow-white/20'
+                  : 'bg-gray-900/80 border border-gray-800 hover:bg-gray-800/80 hover:border-gray-700'
+              }`}
+            >
+              <btn.icon className={`w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 ${
+                mode === btn.id ? 'text-black' : 'text-gray-400'
+              }`} />
+              <p className={`font-bold text-sm md:text-xl ${
+                mode === btn.id ? 'text-black' : 'text-white'
+              }`}>
+                {btn.label}
               </p>
-              {checkInResult.member && (
-                <p className="text-gray-400 mt-1">
-                  {checkInResult.member.program} Program
-                </p>
+              <p className={`text-xs md:text-sm mt-1 hidden md:block ${
+                mode === btn.id ? 'text-gray-600' : 'text-gray-500'
+              }`}>
+                {btn.desc}
+              </p>
+              {mode === btn.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-white rounded-2xl md:rounded-3xl -z-10"
+                />
               )}
-            </div>
-          </div>
-        )}
+            </motion.button>
+          ))}
+        </div>
 
         {/* Camera Scan Mode */}
-        {mode === 'scan' && (
-          <div className="mb-8">
-            <div className="bg-gray-900 border-2 border-gray-700 rounded-2xl p-6">
-              {cameraError ? (
-                <div className="text-center py-8">
-                  <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-                  <p className="text-red-400 mb-4">{cameraError}</p>
-                  <button
-                    onClick={() => {
-                      setCameraError(null);
-                      startScanner();
-                    }}
-                    className="px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-200"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="text-center mb-4">
-                    <p className="text-xl text-gray-400">
-                      Point camera at QR code or barcode
-                    </p>
+        <AnimatePresence mode="wait">
+          {mode === 'scan' && (
+            <motion.div
+              key="scan"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-3xl p-6 md:p-10">
+                {cameraError ? (
+                  <div className="text-center py-8">
+                    <XCircle className="w-20 h-20 mx-auto mb-6 text-red-500" />
+                    <p className="text-red-400 text-xl mb-6">{cameraError}</p>
+                    <button
+                      onClick={() => {
+                        setCameraError(null);
+                        startScanner();
+                      }}
+                      className="px-8 py-4 bg-white text-black rounded-2xl font-bold text-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Try Again
+                    </button>
                   </div>
-                  <div
-                    id="qr-reader"
-                    ref={scannerContainerRef}
-                    className="mx-auto rounded-xl overflow-hidden bg-black"
-                    style={{ maxWidth: '400px' }}
-                  />
-                  {isLoading && (
-                    <div className="text-center mt-4">
-                      <p className="text-xl text-white animate-pulse">Processing...</p>
+                ) : (
+                  <>
+                    <div className="text-center mb-6">
+                      <p className="text-xl md:text-2xl text-gray-300">
+                        Point camera at your <span className="text-white font-bold">QR code</span> or <span className="text-white font-bold">barcode</span>
+                      </p>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                    <div
+                      id="qr-reader"
+                      ref={scannerContainerRef}
+                      className="mx-auto rounded-2xl overflow-hidden bg-black border-4 border-gray-700"
+                      style={{ maxWidth: '400px' }}
+                    />
+                    {isLoading && (
+                      <div className="text-center mt-6">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-12 h-12 border-4 border-gray-700 border-t-white rounded-full mx-auto mb-4"
+                        />
+                        <p className="text-xl text-white">Processing...</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
 
-        {/* Manual Entry Mode */}
-        {mode === 'manual' && (
-          <div className="mb-8">
-            <form onSubmit={handleManualSubmit} className="relative">
-              <div className="bg-gray-900 border-2 border-gray-700 rounded-2xl p-8 text-center">
-                <QrCode className="w-20 h-20 mx-auto mb-4 text-gray-600" />
-                <p className="text-xl text-gray-400 mb-6">
-                  Type member ID, last 4 of phone, or name
-                </p>
+          {/* Manual Entry Mode */}
+          {mode === 'manual' && (
+            <motion.div
+              key="manual"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              <form onSubmit={handleManualSubmit}>
+                <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-3xl p-8 md:p-12 text-center">
+                  <QrCode className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-6 text-gray-600" />
+                  <p className="text-xl md:text-2xl text-gray-300 mb-8">
+                    Enter your <span className="text-white font-bold">member ID</span>, <span className="text-white font-bold">last 4 of phone</span>, or <span className="text-white font-bold">name</span>
+                  </p>
+                  <input
+                    ref={barcodeInputRef}
+                    type="text"
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    placeholder="Type here..."
+                    className="w-full bg-black border-2 border-gray-700 rounded-2xl px-6 py-5 md:py-6 text-2xl md:text-3xl text-center focus:ring-4 focus:ring-white/20 focus:border-white transition-all"
+                    autoFocus
+                    autoComplete="off"
+                  />
+                  <motion.button
+                    type="submit"
+                    disabled={isLoading || !barcodeInput.trim()}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-8 w-full bg-gradient-to-r from-white to-gray-100 text-black font-bold py-5 md:py-6 rounded-2xl text-xl md:text-2xl hover:from-gray-100 hover:to-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-6 h-6 border-3 border-gray-400 border-t-black rounded-full"
+                        />
+                        Processing...
+                      </span>
+                    ) : (
+                      'Check In'
+                    )}
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Dropdown Mode */}
+          {mode === 'dropdown' && (
+            <motion.div
+              key="dropdown"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              {/* Search */}
+              <div className="relative mb-6">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 md:w-7 md:h-7 text-gray-500" />
                 <input
-                  ref={barcodeInputRef}
                   type="text"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  placeholder="Enter code or name..."
-                  className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-6 py-4 text-2xl text-center focus:ring-2 focus:ring-white focus:border-transparent"
-                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name..."
+                  className="w-full bg-gray-900/80 border-2 border-gray-800 rounded-2xl pl-14 md:pl-16 pr-6 py-5 md:py-6 text-xl md:text-2xl focus:ring-4 focus:ring-white/20 focus:border-gray-600 transition-all"
                   autoComplete="off"
                 />
-                <button
-                  type="submit"
-                  disabled={isLoading || !barcodeInput.trim()}
-                  className="mt-6 w-full bg-white text-black font-bold py-4 rounded-xl text-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Checking in...' : 'Check In'}
-                </button>
               </div>
-            </form>
-          </div>
-        )}
 
-        {/* Dropdown Mode */}
-        {mode === 'dropdown' && (
-          <div className="mb-8">
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name..."
-                className="w-full bg-gray-900 border-2 border-gray-700 rounded-xl pl-14 pr-6 py-4 text-xl focus:ring-2 focus:ring-white focus:border-transparent"
-                autoComplete="off"
-              />
-            </div>
+              {/* Member Selection Confirmation */}
+              <AnimatePresence>
+                {selectedMember && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={`bg-gradient-to-br ${getProgramColor(selectedMember.program)} rounded-3xl p-6 md:p-8 mb-6 border-2 border-white/20`}
+                  >
+                    <div className="flex items-center gap-4 md:gap-6 mb-6">
+                      <div className="w-20 h-20 md:w-24 md:h-24 bg-white/20 rounded-full flex items-center justify-center">
+                        <User className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h2 className="text-2xl md:text-4xl font-bold text-white">
+                          {selectedMember.first_name} {selectedMember.last_name}
+                        </h2>
+                        <p className="text-lg md:text-xl text-white/80 capitalize">
+                          {selectedMember.program?.replace('-', ' ')} Program
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <motion.button
+                        onClick={() => handleCheckIn(selectedMember)}
+                        disabled={isLoading}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 bg-white text-black font-bold py-5 md:py-6 rounded-2xl text-xl md:text-2xl hover:bg-gray-100 transition-colors disabled:opacity-50 shadow-xl"
+                      >
+                        {isLoading ? (
+                          <span className="flex items-center justify-center gap-3">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="w-6 h-6 border-3 border-gray-400 border-t-black rounded-full"
+                            />
+                            Checking in...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-3">
+                            <CheckCircle className="w-7 h-7" />
+                            Confirm Check-In
+                          </span>
+                        )}
+                      </motion.button>
+                      <button
+                        onClick={() => setSelectedMember(null)}
+                        className="px-6 md:px-8 py-5 md:py-6 bg-black/30 border-2 border-white/30 rounded-2xl hover:bg-black/50 transition-colors text-lg font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-            {/* Member Selection */}
-            {selectedMember ? (
-              <div className="bg-gray-900 border-2 border-white rounded-2xl p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center">
-                    <User className="w-10 h-10 text-gray-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold">
-                      {selectedMember.first_name} {selectedMember.last_name}
-                    </h2>
-                    <p className="text-gray-400">{selectedMember.program}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => handleCheckIn(selectedMember)}
-                    disabled={isLoading}
-                    className="flex-1 bg-white text-black font-bold py-4 rounded-xl text-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
-                  >
-                    {isLoading ? 'Checking in...' : 'Confirm Check-In'}
-                  </button>
-                  <button
-                    onClick={() => setSelectedMember(null)}
-                    className="px-6 py-4 border-2 border-gray-700 rounded-xl hover:bg-gray-800 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-                <div className="max-h-[50vh] overflow-y-auto">
+              {/* Member Cards Grid */}
+              {!selectedMember && (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden">
                   {activeMembers.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                      {searchQuery
-                        ? 'No members found matching your search'
-                        : 'No active members'}
+                    <div className="p-12 text-center text-gray-500">
+                      <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-xl">
+                        {searchQuery
+                          ? 'No members found matching your search'
+                          : 'No active members'}
+                      </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-800">
-                      {activeMembers.map((member) => (
-                        <button
-                          key={member.id}
-                          onClick={() => setSelectedMember(member)}
-                          className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-800 transition-colors text-left"
-                        >
-                          <div className="w-14 h-14 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-7 h-7 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-lg font-medium truncate">
-                              {member.first_name} {member.last_name}
-                            </p>
-                            <p className="text-sm text-gray-500 truncate">
-                              {member.program}
-                            </p>
-                          </div>
-                          <div className="text-gray-600">
-                            <CheckCircle className="w-8 h-8" />
-                          </div>
-                        </button>
-                      ))}
+                    <div className="max-h-[50vh] md:max-h-[55vh] overflow-y-auto p-3 md:p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                        {activeMembers.map((member) => {
+                          const ProgramIcon = getProgramIcon(member.program);
+                          return (
+                            <motion.button
+                              key={member.id}
+                              onClick={() => setSelectedMember(member)}
+                              whileTap={{ scale: 0.98 }}
+                              className={`w-full p-4 md:p-6 flex items-center gap-4 bg-gradient-to-r ${getProgramColor(member.program)} rounded-2xl border border-white/10 hover:border-white/30 transition-all text-left group`}
+                            >
+                              <div className="w-14 h-14 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
+                                <ProgramIcon className="w-7 h-7 md:w-8 md:h-8 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-lg md:text-xl font-bold text-white truncate">
+                                  {member.first_name} {member.last_name}
+                                </p>
+                                <p className="text-sm md:text-base text-white/70 truncate capitalize">
+                                  {member.program?.replace('-', ' ')}
+                                </p>
+                              </div>
+                              <CheckCircle className="w-8 h-8 text-white/50 group-hover:text-white transition-colors flex-shrink-0" />
+                            </motion.button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Recent Check-ins */}
         {recentCheckIns.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-400 mb-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-8"
+          >
+            <h3 className="text-lg md:text-xl font-medium text-gray-400 mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
               Recent Check-ins
             </h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 md:gap-3">
               {recentCheckIns.map((member, index) => (
-                <div
+                <motion.div
                   key={`${member.id}-${index}`}
-                  className="bg-gray-900 border border-gray-800 rounded-full px-4 py-2 flex items-center gap-2"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gradient-to-r from-green-900/30 to-green-800/30 border border-green-700/50 rounded-full px-4 py-2 md:px-5 md:py-3 flex items-center gap-2 md:gap-3"
                 >
-                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-500" />
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-green-800/50 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
                   </div>
-                  <span className="text-sm">
+                  <span className="text-sm md:text-base font-medium text-green-300">
                     {member.first_name} {member.last_name?.charAt(0) || ''}.
                   </span>
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                </div>
+                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-2 gap-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-            <p className="text-4xl font-bold text-green-400">
-              {recentCheckIns.length}
+        <div className="mt-10 grid grid-cols-2 gap-4 md:gap-6">
+          <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 border border-green-800/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
+            <p className="text-4xl md:text-6xl font-bold text-green-400">
+              {todayCount}
             </p>
-            <p className="text-gray-500 mt-1">Today&apos;s Check-ins</p>
+            <p className="text-gray-400 mt-2 text-sm md:text-base">Today&apos;s Check-ins</p>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-            <p className="text-4xl font-bold">{activeMembers.length}</p>
-            <p className="text-gray-500 mt-1">Active Members</p>
+          <div className="bg-gradient-to-br from-purple-900/30 to-purple-950/30 border border-purple-800/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
+            <p className="text-4xl md:text-6xl font-bold text-purple-400">{activeMembers.length}</p>
+            <p className="text-gray-400 mt-2 text-sm md:text-base">Active Members</p>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 px-6 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between text-sm text-gray-500">
-          <span>The Fort Jiu-Jitsu</span>
-          <span>Tap to check in</span>
+      <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800/50 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between text-sm md:text-base text-gray-500">
+          <div className="flex items-center gap-3">
+            <div className="relative w-8 h-8">
+              <Image
+                src="/jiu-jitsu.png"
+                alt="The Fort"
+                fill
+                className="object-contain opacity-50"
+              />
+            </div>
+            <span>The Fort Jiu-Jitsu</span>
+          </div>
+          <span className="text-gray-600">Tap your name or scan your code</span>
         </div>
       </footer>
     </div>
