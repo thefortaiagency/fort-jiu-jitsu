@@ -72,10 +72,12 @@ export default function MemberForm({ member, onSave, onCancel }: MemberFormProps
     // Generate PIN if not set
     const pin_code = formData.pin_code || Math.floor(1000 + Math.random() * 9000).toString();
 
+    // Convert empty strings to null for date fields
     const memberData = {
       ...formData,
       pin_code,
       email: formData.email.toLowerCase().trim(),
+      birth_date: formData.birth_date || null,
       updated_at: new Date().toISOString(),
     };
 
