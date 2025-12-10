@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-// GET - Lookup member by barcode/member code
+// GET - Lookup member by barcode/code
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
@@ -16,30 +16,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to find member by:
-    // 1. member_code field (if we add one)
+    // 1. UUID (full member ID)
     // 2. Last 4 digits of phone number
-    // 3. Member ID (UUID)
-    // 4. Email prefix
+    // 3. Email address
+    // 4. Name search (first or last name)
 
     let member = null;
 
-    // Try by member_code first
-    const { data: byCode } = await supabase
-      .from('members')
-      .select('*')
-      .eq('member_code', code)
-      .eq('status', 'active')
-      .single();
-
-    if (byCode) {
-      member = byCode;
-    }
-
     // Try by UUID if it looks like one
-    if (!member && code.length === 36 && code.includes('-')) {
+    if (code.length === 36 && code.includes('-')) {
       const { data: byId } = await supabase
         .from('members')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, program, status')
         .eq('id', code)
         .eq('status', 'active')
         .single();
@@ -53,7 +41,7 @@ export async function GET(request: NextRequest) {
     if (!member && /^\d{4}$/.test(code)) {
       const { data: byPhone } = await supabase
         .from('members')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, program, status')
         .like('phone', `%${code}`)
         .eq('status', 'active')
         .limit(1)
@@ -64,18 +52,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Try by numeric member number (if stored as part of a code)
-    if (!member && /^\d+$/.test(code)) {
-      // Check if this matches a short ID or sequential number
-      const { data: byNumeric } = await supabase
+    // Try by email
+    if (!member && code.includes('@')) {
+      const { data: byEmail } = await supabase
         .from('members')
-        .select('*')
-        .eq('short_id', parseInt(code))
+        .select('id, first_name, last_name, email, phone, program, status')
+        .eq('email', code.toLowerCase())
         .eq('status', 'active')
         .single();
 
-      if (byNumeric) {
-        member = byNumeric;
+      if (byEmail) {
+        member = byEmail;
+      }
+    }
+
+    // Try by name (case-insensitive search on first or last name)
+    if (!member && code.length >= 2) {
+      const { data: byName } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, email, phone, program, status')
+        .or(`first_name.ilike.%${code}%,last_name.ilike.%${code}%`)
+        .eq('status', 'active')
+        .limit(1)
+        .single();
+
+      if (byName) {
+        member = byName;
       }
     }
 

@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS check_ins (
   class_id UUID,
   checked_in_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   checked_in_by UUID,
-  check_in_method TEXT DEFAULT 'manual' CHECK (check_in_method IN ('manual', 'qr_code', 'kiosk', 'app')),
+  check_in_method TEXT DEFAULT 'manual' CHECK (check_in_method IN ('manual', 'qr_code', 'kiosk', 'barcode', 'app')),
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -48,6 +48,21 @@ CREATE POLICY "Members can view own check_ins" ON check_ins
       SELECT id FROM members WHERE email = auth.jwt()->>'email'
     )
   );
+
+-- Allow kiosk (anon role) to create and read check-ins
+DROP POLICY IF EXISTS "Allow anon insert check_ins" ON check_ins;
+DROP POLICY IF EXISTS "Allow anon read check_ins" ON check_ins;
+
+CREATE POLICY "Allow anon insert check_ins" ON check_ins
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow anon read check_ins" ON check_ins
+  FOR SELECT USING (true);
+
+-- Allow kiosk to read members for dropdown
+DROP POLICY IF EXISTS "Allow anon read members" ON members;
+CREATE POLICY "Allow anon read members" ON members
+  FOR SELECT USING (true);
 
 -- =====================================================
 -- 3. BELT RANKS TABLE
