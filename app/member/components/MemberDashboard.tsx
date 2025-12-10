@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Users,
@@ -15,6 +15,15 @@ import {
   UserPlus,
   Clock,
   TrendingUp,
+  Award,
+  Edit,
+  Save,
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  Heart,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,22 +32,44 @@ interface MemberDashboardProps {
   onLogout: () => void;
 }
 
+interface BeltInfo {
+  name: string;
+  displayName: string;
+  colorHex: string;
+  isKidsBelt: boolean;
+  stripes: number;
+  updatedAt: string | null;
+}
+
 interface MemberData {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
+  birthDate: string;
   status: string;
   paymentStatus: string;
   membershipType: string;
   program: string;
+  skillLevel: string;
   isActive: boolean;
   individualMonthlyCost: number;
   isPrimaryAccountHolder: boolean;
   familyAccountId?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  totalClassesAttended: number;
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  medicalConditions: string;
+  qrCode: string | null;
+  belt: BeltInfo | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface FamilyMember {
@@ -66,6 +97,8 @@ interface Waiver {
   expiresAt: string;
 }
 
+type TabType = 'overview' | 'checkins' | 'profile' | 'family';
+
 export default function MemberDashboard({ email, onLogout }: MemberDashboardProps) {
   const [member, setMember] = useState<MemberData | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -74,6 +107,10 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [thisMonthCheckIns, setThisMonthCheckIns] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     loadMemberData();
@@ -93,10 +130,17 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       setMember(memberData.member);
       setFamilyMembers(memberData.familyMembers || []);
 
+      // Initialize edit data
+      setEditData({
+        phone: memberData.member.phone || '',
+        emergency_contact_name: memberData.member.emergencyContact?.name || '',
+        emergency_contact_phone: memberData.member.emergencyContact?.phone || '',
+        emergency_contact_relationship: memberData.member.emergencyContact?.relationship || '',
+        medical_conditions: memberData.member.medicalConditions || '',
+      });
+
       // Fetch check-ins
-      const checkInsRes = await fetch(
-        `/api/member/${memberData.member.id}/check-ins`
-      );
+      const checkInsRes = await fetch(`/api/member/${memberData.member.id}/check-ins`);
       if (checkInsRes.ok) {
         const checkInsData = await checkInsRes.json();
         setCheckIns(checkInsData.checkIns || []);
@@ -104,9 +148,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       }
 
       // Fetch waivers
-      const waiversRes = await fetch(
-        `/api/member/${memberData.member.id}/waivers`
-      );
+      const waiversRes = await fetch(`/api/member/${memberData.member.id}/waivers`);
       if (waiversRes.ok) {
         const waiversData = await waiversRes.json();
         setWaivers(waiversData.waivers || []);
@@ -117,6 +159,29 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const res = await fetch(`/api/member/${encodeURIComponent(email)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editData),
+      });
+
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setIsEditing(false);
+        loadMemberData(); // Reload data
+      } else {
+        const data = await res.json();
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to update profile' });
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
+    }
+
+    setTimeout(() => setSaveMessage(null), 3000);
   };
 
   if (isLoading) {
@@ -156,28 +221,6 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     );
   }
 
-  const getStatusIcon = (status: string, paymentStatus: string) => {
-    if (status === 'active' && paymentStatus === 'active') {
-      return <CheckCircle className="w-5 h-5 text-green-400" />;
-    } else if (paymentStatus === 'past_due') {
-      return <AlertCircle className="w-5 h-5 text-yellow-400" />;
-    } else {
-      return <XCircle className="w-5 h-5 text-red-400" />;
-    }
-  };
-
-  const getStatusText = (status: string, paymentStatus: string) => {
-    if (status === 'active' && paymentStatus === 'active') {
-      return { text: 'Active', color: 'text-green-400' };
-    } else if (paymentStatus === 'past_due') {
-      return { text: 'Payment Due', color: 'text-yellow-400' };
-    } else if (status === 'cancelled') {
-      return { text: 'Cancelled', color: 'text-red-400' };
-    } else {
-      return { text: 'Inactive', color: 'text-gray-400' };
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -193,8 +236,67 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     });
   };
 
-  const statusInfo = getStatusText(member.status, member.paymentStatus);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-400';
+      case 'pending': return 'text-yellow-400';
+      case 'inactive':
+      case 'cancelled': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   const validWaiver = waivers.find((w) => w.isValid);
+
+  // Render belt display
+  const renderBeltDisplay = () => {
+    if (!member.belt) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-gray-500">No belt assigned yet</p>
+          <p className="text-sm text-gray-600 mt-1">Contact your instructor to update your belt rank</p>
+        </div>
+      );
+    }
+
+    const { belt } = member;
+    const stripes = [];
+    for (let i = 0; i < belt.stripes; i++) {
+      stripes.push(
+        <div
+          key={i}
+          className="w-3 h-6 bg-white border border-gray-300 rounded-sm"
+        />
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-6">
+        <div
+          className="w-24 h-8 rounded-sm border-2 border-gray-700 flex items-center justify-end gap-1 px-1"
+          style={{ backgroundColor: belt.colorHex }}
+        >
+          {stripes}
+        </div>
+        <div>
+          <p className="text-xl font-bold">{belt.displayName}</p>
+          <p className="text-sm text-gray-400">
+            {belt.stripes > 0 ? `${belt.stripes} stripe${belt.stripes > 1 ? 's' : ''}` : 'No stripes yet'}
+            {belt.updatedAt && (
+              <span className="ml-2">- Promoted {formatDate(belt.updatedAt)}</span>
+            )}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const tabs: { id: TabType; label: string; icon: any }[] = [
+    { id: 'overview', label: 'Overview', icon: User },
+    { id: 'checkins', label: 'Check-ins', icon: Calendar },
+    { id: 'profile', label: 'Profile', icon: Edit },
+    { id: 'family', label: 'Family', icon: Users },
+  ];
 
   return (
     <div className="space-y-6">
@@ -217,263 +319,445 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
         </button>
       </div>
 
-      {/* Status Cards */}
-      <div className="grid md:grid-cols-4 gap-4">
-        {/* Membership Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            {getStatusIcon(member.status, member.paymentStatus)}
-            <h3 className="text-sm font-medium text-gray-400">Status</h3>
-          </div>
-          <p className={`text-2xl font-bold ${statusInfo.color}`}>
-            {statusInfo.text}
-          </p>
-        </motion.div>
+      {/* Save Message */}
+      <AnimatePresence>
+        {saveMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`p-4 rounded-lg ${
+              saveMessage.type === 'success'
+                ? 'bg-green-900/50 border border-green-500 text-green-200'
+                : 'bg-red-900/50 border border-red-500 text-red-200'
+            }`}
+          >
+            {saveMessage.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Check-ins This Month */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
-            <h3 className="text-sm font-medium text-gray-400">This Month</h3>
-          </div>
-          <p className="text-2xl font-bold text-white">
-            {thisMonthCheckIns} <span className="text-sm text-gray-500">check-ins</span>
-          </p>
-        </motion.div>
-
-        {/* Membership Type */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <CreditCard className="w-5 h-5 text-purple-400" />
-            <h3 className="text-sm font-medium text-gray-400">Plan</h3>
-          </div>
-          <p className="text-2xl font-bold text-white capitalize">
-            {member.membershipType}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            ${member.individualMonthlyCost}/mo
-          </p>
-        </motion.div>
-
-        {/* Waiver Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <FileCheck className="w-5 h-5 text-green-400" />
-            <h3 className="text-sm font-medium text-gray-400">Waiver</h3>
-          </div>
-          <p className={`text-2xl font-bold ${validWaiver ? 'text-green-400' : 'text-red-400'}`}>
-            {validWaiver ? 'Valid' : 'Expired'}
-          </p>
-          {validWaiver && (
-            <p className="text-sm text-gray-500 mt-1">
-              Until {formatDate(validWaiver.expiresAt)}
-            </p>
-          )}
-        </motion.div>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-gray-800 pb-2 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-white text-black'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Family Members */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-white" />
-              <h2 className="text-xl font-bold">Family Members</h2>
-            </div>
-            {member.isPrimaryAccountHolder && (
-              <Link
-                href={`/signup?familyAccountId=${member.familyAccountId}`}
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <UserPlus className="w-4 h-4" />
-                Add Member
-              </Link>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            {familyMembers.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No family members linked to this account
-              </p>
-            ) : (
-              familyMembers.map((familyMember) => (
-                <div
-                  key={familyMember.id}
-                  className="flex items-center gap-3 p-4 bg-black rounded-lg border border-gray-800"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {familyMember.firstName} {familyMember.lastName}
-                      {familyMember.isPrimaryAccountHolder && (
-                        <span className="ml-2 text-xs text-gray-500">(Primary)</span>
-                      )}
-                    </p>
-                    <p className="text-sm text-gray-500 capitalize">
-                      {familyMember.program.replace('-', ' ')}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      familyMember.status === 'active'
-                        ? 'bg-green-900/30 text-green-400'
-                        : 'bg-gray-800 text-gray-400'
-                    }`}
-                  >
-                    {familyMember.status}
-                  </span>
+      {/* Tab Content */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            {/* Status Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle className={`w-5 h-5 ${getStatusColor(member.status)}`} />
+                  <h3 className="text-sm font-medium text-gray-400">Status</h3>
                 </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-
-        {/* Recent Check-ins */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <Calendar className="w-6 h-6 text-white" />
-            <h2 className="text-xl font-bold">Recent Check-ins</h2>
-          </div>
-
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
-            {checkIns.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No check-ins recorded yet
-              </p>
-            ) : (
-              checkIns.map((checkIn) => (
-                <div
-                  key={checkIn.id}
-                  className="flex items-center gap-3 p-4 bg-black rounded-lg border border-gray-800"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium capitalize">
-                      {checkIn.classType.replace('-', ' ')}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(checkIn.checkInTime)} at {formatTime(checkIn.checkInTime)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Account Details */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="bg-gray-900 rounded-xl p-6 border border-gray-800"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <User className="w-6 h-6 text-white" />
-          <h2 className="text-xl font-bold">Account Details</h2>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Full Name</p>
-            <p className="font-medium">
-              {member.firstName} {member.lastName}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Email</p>
-            <p className="font-medium">{member.email}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Program</p>
-            <p className="font-medium capitalize">
-              {member.program.replace('-', ' ')}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Account Type</p>
-            <p className="font-medium">
-              {member.isPrimaryAccountHolder
-                ? 'Primary Account Holder'
-                : 'Family Member'}
-            </p>
-          </div>
-          {member.stripeSubscriptionId && (
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Billing Status</p>
-              <p className="font-medium capitalize flex items-center gap-2">
-                {member.paymentStatus}
-                {getStatusIcon(member.status, member.paymentStatus)}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {member.paymentStatus === 'past_due' && (
-          <div className="mt-6 p-4 bg-yellow-900/20 border border-yellow-900/50 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-yellow-400 mb-1">
-                  Payment Required
+                <p className={`text-2xl font-bold capitalize ${getStatusColor(member.status)}`}>
+                  {member.status}
                 </p>
-                <p className="text-sm text-gray-400">
-                  Your membership payment is past due. Please update your payment
-                  information to continue accessing classes.
+              </div>
+
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-sm font-medium text-gray-400">This Month</h3>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {thisMonthCheckIns} <span className="text-sm text-gray-500">classes</span>
+                </p>
+              </div>
+
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  <h3 className="text-sm font-medium text-gray-400">Total Classes</h3>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {member.totalClassesAttended}
+                </p>
+              </div>
+
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <FileCheck className={`w-5 h-5 ${validWaiver ? 'text-green-400' : 'text-red-400'}`} />
+                  <h3 className="text-sm font-medium text-gray-400">Waiver</h3>
+                </div>
+                <p className={`text-2xl font-bold ${validWaiver ? 'text-green-400' : 'text-red-400'}`}>
+                  {validWaiver ? 'Valid' : 'Expired'}
                 </p>
               </div>
             </div>
-          </div>
+
+            {/* Belt Rank */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center gap-3 mb-6">
+                <Award className="w-6 h-6 text-yellow-400" />
+                <h2 className="text-xl font-bold">Belt Rank</h2>
+              </div>
+              {renderBeltDisplay()}
+            </div>
+
+            {/* Membership Info */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center gap-3 mb-6">
+                <CreditCard className="w-6 h-6 text-purple-400" />
+                <h2 className="text-xl font-bold">Membership</h2>
+              </div>
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Program</p>
+                  <p className="font-medium capitalize">{member.program?.replace('-', ' ') || 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Plan</p>
+                  <p className="font-medium capitalize">{member.membershipType}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Monthly Rate</p>
+                  <p className="font-medium">${member.individualMonthlyCost}/mo</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Check-ins Preview */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-blue-400" />
+                  <h2 className="text-xl font-bold">Recent Check-ins</h2>
+                </div>
+                <button
+                  onClick={() => setActiveTab('checkins')}
+                  className="text-sm text-gray-400 hover:text-white"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="space-y-3">
+                {checkIns.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No check-ins yet</p>
+                ) : (
+                  checkIns.slice(0, 5).map((checkIn) => (
+                    <div
+                      key={checkIn.id}
+                      className="flex items-center gap-3 p-3 bg-black rounded-lg border border-gray-800"
+                    >
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-400">
+                          {formatDate(checkIn.checkInTime)} at {formatTime(checkIn.checkInTime)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
         )}
-      </motion.div>
+
+        {activeTab === 'checkins' && (
+          <motion.div
+            key="checkins"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <Calendar className="w-6 h-6 text-blue-400" />
+              <h2 className="text-xl font-bold">Check-in History</h2>
+              <span className="text-sm text-gray-500">({checkIns.length} total)</span>
+            </div>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {checkIns.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No check-ins recorded yet</p>
+              ) : (
+                checkIns.map((checkIn, index) => (
+                  <div
+                    key={checkIn.id}
+                    className="flex items-center gap-4 p-4 bg-black rounded-lg border border-gray-800"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-green-900/30 flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Check-in #{checkIns.length - index}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(checkIn.checkInTime)} at {formatTime(checkIn.checkInTime)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'profile' && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            {/* Personal Info */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <User className="w-6 h-6 text-white" />
+                  <h2 className="text-xl font-bold">Personal Information</h2>
+                </div>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveProfile}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Full Name</p>
+                  <p className="font-medium">{member.firstName} {member.lastName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Email</p>
+                  <p className="font-medium flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    {member.email}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Phone</p>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editData.phone}
+                      onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    />
+                  ) : (
+                    <p className="font-medium flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      {member.phone || 'Not set'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Member ID</p>
+                  <p className="font-mono text-sm text-gray-400">{member.id.slice(0, 8)}...</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center gap-3 mb-6">
+                <Heart className="w-6 h-6 text-red-400" />
+                <h2 className="text-xl font-bold">Emergency Contact</h2>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Name</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.emergency_contact_name}
+                      onChange={(e) => setEditData({ ...editData, emergency_contact_name: e.target.value })}
+                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    />
+                  ) : (
+                    <p className="font-medium">{member.emergencyContact?.name || 'Not set'}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Phone</p>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editData.emergency_contact_phone}
+                      onChange={(e) => setEditData({ ...editData, emergency_contact_phone: e.target.value })}
+                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    />
+                  ) : (
+                    <p className="font-medium">{member.emergencyContact?.phone || 'Not set'}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Relationship</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.emergency_contact_relationship}
+                      onChange={(e) => setEditData({ ...editData, emergency_contact_relationship: e.target.value })}
+                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    />
+                  ) : (
+                    <p className="font-medium">{member.emergencyContact?.relationship || 'Not set'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Medical Info */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex items-center gap-3 mb-6">
+                <AlertCircle className="w-6 h-6 text-yellow-400" />
+                <h2 className="text-xl font-bold">Medical Information</h2>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Medical Conditions / Allergies</p>
+                {isEditing ? (
+                  <textarea
+                    value={editData.medical_conditions}
+                    onChange={(e) => setEditData({ ...editData, medical_conditions: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    placeholder="List any conditions, allergies, or medications..."
+                  />
+                ) : (
+                  <p className="font-medium">{member.medicalConditions || 'None listed'}</p>
+                )}
+              </div>
+            </div>
+
+            {/* QR Code */}
+            {member.qrCode && (
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">📱</span>
+                  <h2 className="text-xl font-bold">Your Check-in Code</h2>
+                </div>
+                <p className="font-mono text-lg bg-black px-4 py-2 rounded-lg inline-block">
+                  {member.qrCode}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Use this code or scan your keychain tag at the kiosk to check in
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'family' && (
+          <motion.div
+            key="family"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Users className="w-6 h-6 text-white" />
+                <h2 className="text-xl font-bold">Family Account</h2>
+              </div>
+              {member.isPrimaryAccountHolder && (
+                <Link
+                  href={`/signup?familyAccountId=${member.familyAccountId}`}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add Member
+                </Link>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {familyMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500">No family members linked to this account</p>
+                  {member.isPrimaryAccountHolder && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Click "Add Member" to add family members to your account
+                    </p>
+                  )}
+                </div>
+              ) : (
+                familyMembers.map((fm) => (
+                  <div
+                    key={fm.id}
+                    className="flex items-center gap-4 p-4 bg-black rounded-lg border border-gray-800"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+                      <User className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {fm.firstName} {fm.lastName}
+                        {fm.isPrimaryAccountHolder && (
+                          <span className="ml-2 text-xs bg-gray-700 px-2 py-1 rounded">Primary</span>
+                        )}
+                      </p>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {fm.program?.replace('-', ' ')}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-sm font-medium px-3 py-1 rounded-full ${
+                        fm.status === 'active'
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-gray-800 text-gray-400'
+                      }`}
+                    >
+                      {fm.status}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Contact Support */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="bg-gray-900/50 rounded-xl p-6 border border-gray-800/50 text-center"
-      >
-        <p className="text-gray-400 mb-4">
-          Need help with your account?
-        </p>
+      <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800/50 text-center">
+        <p className="text-gray-400 mb-4">Need help with your account?</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="tel:2604527615"
@@ -488,7 +772,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             Contact Support
           </Link>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
