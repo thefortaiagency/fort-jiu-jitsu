@@ -108,3 +108,112 @@ export async function getJiuJitsuClasses() {
     .eq('is_active', true)
     .ilike('program', '%bjj%');
 }
+
+// Family account helper functions
+export async function getFamilyMembers(primaryMemberId: string) {
+  const supabase = createServerSupabaseClient();
+
+  // Get the primary member first
+  const { data: primaryMember, error: primaryError } = await supabase
+    .from('members')
+    .select('*')
+    .eq('id', primaryMemberId)
+    .single();
+
+  if (primaryError || !primaryMember) {
+    return { data: null, error: primaryError };
+  }
+
+  // If this member is not a primary account holder, find their family
+  const familyAccountId = primaryMember.is_primary_account_holder
+    ? primaryMember.id
+    : primaryMember.family_account_id;
+
+  if (!familyAccountId) {
+    return { data: [primaryMember], error: null };
+  }
+
+  // Get all family members
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .or(`id.eq.${familyAccountId},family_account_id.eq.${familyAccountId}`)
+    .order('is_primary_account_holder', { ascending: false })
+    .order('created_at', { ascending: true });
+
+  return { data, error };
+}
+
+export async function linkToFamily(childId: string, parentId: string) {
+  const supabase = createServerSupabaseClient();
+
+  // Verify parent exists and is a primary account holder
+  const { data: parent, error: parentError } = await supabase
+    .from('members')
+    .select('id, is_primary_account_holder, stripe_customer_id')
+    .eq('id', parentId)
+    .single();
+
+  if (parentError || !parent) {
+    return { data: null, error: new Error('Parent member not found') };
+  }
+
+  if (!parent.is_primary_account_holder) {
+    return { data: null, error: new Error('Parent must be a primary account holder') };
+  }
+
+  // Update child to link to parent's family
+  const { data, error } = await supabase
+    .from('members')
+    .update({
+      family_account_id: parentId,
+      is_primary_account_holder: false,
+      stripe_customer_id: parent.stripe_customer_id, // Use parent's Stripe customer
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', childId)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+export async function getFamilyBilling(primaryMemberId: string) {
+  const supabase = createServerSupabaseClient();
+
+  // Get all family members
+  const { data: familyMembers, error } = await getFamilyMembers(primaryMemberId);
+
+  if (error || !familyMembers) {
+    return { data: null, error };
+  }
+
+  // Calculate family billing
+  const primaryMember = familyMembers.find((m) => m.is_primary_account_holder);
+  const childMembers = familyMembers.filter((m) => !m.is_primary_account_holder);
+
+  // Family discount: $150/month for family (vs $100+$75 = $175 individual)
+  const hasFamilyDiscount = familyMembers.length > 1;
+  const familyTotal = hasFamilyDiscount ? 150 : (primaryMember?.individual_monthly_cost || 100);
+
+  return {
+    data: {
+      primaryMember,
+      childMembers,
+      totalMembers: familyMembers.length,
+      monthlyTotal: familyTotal,
+      savings: hasFamilyDiscount ? 25 : 0,
+      stripeCustomerId: primaryMember?.stripe_customer_id,
+    },
+    error: null,
+  };
+}
+
+export async function getMemberByEmail(email: string) {
+  const supabase = createServerSupabaseClient();
+  return supabase
+    .from('members')
+    .select('*')
+    .eq('email', email)
+    .single();
+}

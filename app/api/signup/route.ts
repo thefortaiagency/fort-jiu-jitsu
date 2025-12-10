@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       waiverAgreed,
       signatureData,
       signerName,
+      linkToParentId, // Optional: for family member signup flow
     } = body;
 
     // Validate required fields
@@ -42,6 +43,20 @@ export async function POST(request: NextRequest) {
     if (!waiverAgreed || !signatureData || !signerName) {
       return NextResponse.json(
         { error: 'Waiver must be signed' },
+        { status: 400 }
+      );
+    }
+
+    // Determine if minor
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const isMinor = age < 18;
+
+    // Validate parent info for minors (REQUIRED, not optional)
+    if (isMinor && (!parentFirstName || !parentLastName || !parentEmail)) {
+      return NextResponse.json(
+        { error: 'Parent/Guardian information is required for minors under 18' },
         { status: 400 }
       );
     }
@@ -62,27 +77,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine if minor
-    const birthDate = new Date(dateOfBirth);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const isMinor = age < 18;
-
     // Determine program based on membership type
     const program = membershipType === 'kids' ? 'kids-bjj' : 'adult-bjj';
 
-    // Create Stripe customer
-    const stripeCustomer = await stripe.customers.create({
-      email: isMinor && parentEmail ? parentEmail : email,
-      name: isMinor
-        ? `${parentFirstName} ${parentLastName} (for ${firstName} ${lastName})`
-        : `${firstName} ${lastName}`,
-      metadata: {
-        member_name: `${firstName} ${lastName}`,
-        membership_type: membershipType,
-        source: 'thefortjiujitsu.com',
-      },
-    });
+    // Handle family account linking
+    let parentMember = null;
+    let familyAccountId = null;
+    let isPrimaryAccountHolder = true;
+    let stripeCustomerId = null;
+
+    // If this is a child signup and we have parent email, check if parent exists
+    if (isMinor && parentEmail && !linkToParentId) {
+      const { data: existingParent } = await supabase
+        .from('members')
+        .select('id, stripe_customer_id, is_primary_account_holder, email, family_account_id')
+        .eq('email', parentEmail)
+        .single();
+
+      if (existingParent) {
+        // Parent exists, link to their account
+        parentMember = existingParent;
+        familyAccountId = existingParent.is_primary_account_holder
+          ? existingParent.id
+          : existingParent.family_account_id;
+        isPrimaryAccountHolder = false;
+        stripeCustomerId = existingParent.stripe_customer_id;
+      }
+    }
+
+    // If linkToParentId is provided (from family signup flow)
+    if (linkToParentId) {
+      const { data: existingParent } = await supabase
+        .from('members')
+        .select('id, stripe_customer_id, is_primary_account_holder, family_account_id')
+        .eq('id', linkToParentId)
+        .single();
+
+      if (existingParent) {
+        parentMember = existingParent;
+        familyAccountId = existingParent.is_primary_account_holder
+          ? existingParent.id
+          : existingParent.family_account_id;
+        isPrimaryAccountHolder = false;
+        stripeCustomerId = existingParent.stripe_customer_id;
+      }
+    }
+
+    // Create Stripe customer only if not using parent's
+    if (!stripeCustomerId) {
+      const stripeCustomer = await stripe.customers.create({
+        email: isMinor && parentEmail ? parentEmail : email,
+        name: isMinor
+          ? `${parentFirstName} ${parentLastName} (for ${firstName} ${lastName})`
+          : `${firstName} ${lastName}`,
+        metadata: {
+          member_name: `${firstName} ${lastName}`,
+          membership_type: membershipType,
+          source: 'thefortjiujitsu.com',
+          is_primary_account_holder: isPrimaryAccountHolder.toString(),
+        },
+      });
+      stripeCustomerId = stripeCustomer.id;
+    }
 
     // Create member in database
     const { data: newMember, error: memberError } = await supabase
@@ -105,20 +161,34 @@ export async function POST(request: NextRequest) {
         emergency_contact_phone: emergencyContactPhone,
         emergency_contact_relationship: emergencyContactRelationship || null,
         medical_conditions: medicalConditions || null,
-        stripe_customer_id: stripeCustomer.id,
+        stripe_customer_id: stripeCustomerId,
         payment_status: 'pending',
+        family_account_id: familyAccountId,
+        is_primary_account_holder: isPrimaryAccountHolder,
+        individual_monthly_cost: membershipType === 'kids' ? 75 : membershipType === 'adult' ? 100 : 20,
       })
       .select()
       .single();
 
     if (memberError) {
       console.error('Error creating member:', memberError);
-      // Clean up Stripe customer if member creation fails
-      await stripe.customers.del(stripeCustomer.id);
+      // Clean up Stripe customer if member creation fails (only if we created a new one)
+      if (isPrimaryAccountHolder && stripeCustomerId) {
+        await stripe.customers.del(stripeCustomerId);
+      }
       return NextResponse.json(
         { error: 'Failed to create member account' },
         { status: 500 }
       );
+    }
+
+    // Determine signer relationship
+    let signerRelationship = 'self';
+    if (isMinor) {
+      // For minors, determine if parent or guardian based on signer name match
+      const signerNameLower = signerName.toLowerCase();
+      const parentNameLower = `${parentFirstName} ${parentLastName}`.toLowerCase();
+      signerRelationship = signerNameLower === parentNameLower ? 'parent' : 'guardian';
     }
 
     // Store waiver signature
@@ -128,7 +198,7 @@ export async function POST(request: NextRequest) {
       waiver_version: '1.0',
       signer_name: signerName,
       signer_email: isMinor && parentEmail ? parentEmail : email,
-      signer_relationship: isMinor ? 'parent' : 'self',
+      signer_relationship: signerRelationship,
       signature_data: signatureData,
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       user_agent: request.headers.get('user-agent') || 'unknown',
@@ -152,7 +222,7 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
-      customer: stripeCustomer.id,
+      customer: stripeCustomerId,
       mode: priceConfig.mode,
       payment_method_types: ['card'],
       line_items: [

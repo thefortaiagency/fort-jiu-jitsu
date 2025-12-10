@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { isMinor } from '@/lib/waiver-utils';
 
 const DROP_IN_PRICE_CENTS = 2000; // $20
 
@@ -32,13 +33,24 @@ export async function POST(request: NextRequest) {
 
       // If they need to renew waiver, save it
       if (needsWaiver && signatureData && signerName) {
+        // Determine signer relationship based on current age
+        const memberIsMinor = member.birth_date && isMinor(member.birth_date);
+        let signerRelationship = 'self';
+
+        if (memberIsMinor) {
+          // For minors, check if signer matches parent name
+          const parentName = `${member.parent_first_name} ${member.parent_last_name}`.toLowerCase();
+          const signerNameLower = signerName.toLowerCase();
+          signerRelationship = signerNameLower === parentName ? 'parent' : 'guardian';
+        }
+
         await supabase.from('waivers').insert({
           member_id: memberId,
           waiver_type: 'liability',
           waiver_version: '1.0',
           signer_name: signerName,
-          signer_email: existingMember.email,
-          signer_relationship: 'self',
+          signer_email: memberIsMinor && member.parent_email ? member.parent_email : existingMember.email,
+          signer_relationship: signerRelationship,
           signature_data: signatureData,
           ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
           user_agent: request.headers.get('user-agent') || 'unknown',

@@ -13,6 +13,7 @@ const navLinks = [
   { href: '/schedule', label: 'Schedule' },
   { href: '/instructors', label: 'Instructors' },
   { href: '/contact', label: 'Contact' },
+  { href: '/member', label: 'Member Portal' },
 ];
 
 export default function Navigation() {
