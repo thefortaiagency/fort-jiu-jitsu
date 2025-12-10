@@ -10,7 +10,8 @@ import type { Member } from '@/lib/supabase';
 import MemberList from './MemberList';
 import MemberDetail from './MemberDetail';
 import MemberForm from './MemberForm';
-import { Users, ClipboardCheck, FileCheck, Calendar, Award, QrCode, LogOut } from 'lucide-react';
+import AdminNav from './AdminNav';
+import { LogOut } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: User;
@@ -139,15 +140,6 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
     setSelectedMember(null);
   };
 
-  const navItems = [
-    { href: '/admin', label: 'Members', icon: Users, active: true },
-    { href: '/admin/check-ins', label: 'Check-ins', icon: ClipboardCheck, active: false },
-    { href: '/admin/waivers', label: 'Waivers', icon: FileCheck, active: false },
-    { href: '/admin/classes', label: 'Classes', icon: Calendar, active: false },
-    { href: '/admin/promotions', label: 'Promotions', icon: Award, active: false },
-    { href: '/admin/qr-codes', label: 'QR Codes', icon: QrCode, active: false },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
       {/* Watermark Logo Background */}
@@ -195,29 +187,10 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Navigation Cards */}
-        {view === 'list' && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4 mb-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center gap-2 p-3 md:p-4 rounded-xl md:rounded-2xl transition-all ${
-                  item.active
-                    ? 'bg-white text-black shadow-lg shadow-white/10'
-                    : 'bg-gray-900/80 border border-gray-800 hover:bg-gray-800/80 hover:border-gray-700 text-white'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 md:w-6 md:h-6 ${item.active ? 'text-black' : 'text-gray-400'}`} />
-                <span className={`text-xs md:text-sm font-medium ${item.active ? 'text-black' : 'text-gray-300'}`}>
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
+      {/* Navigation Bar */}
+      <AdminNav />
 
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Stats Cards */}
         {view === 'list' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">

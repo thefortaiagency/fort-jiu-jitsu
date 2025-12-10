@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BeltBadge } from '@/app/components/BeltDisplay';
-import { ArrowLeft } from 'lucide-react';
+import AdminNav from '../components/AdminNav';
 
 interface Member {
   id: string;
@@ -79,60 +80,46 @@ export default function PromotionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
+      {/* Watermark Logo Background */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] opacity-[0.06]">
+          <Image
+            src="/jiu-jitsu.png"
+            alt=""
+            fill
+            className="object-contain invert"
+            priority
+          />
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800">
+      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-serif">THE FORT</h1>
-              <p className="text-gray-400 text-sm">Admin Console</p>
-            </div>
-            <Link
-              href="/admin"
-              className="px-4 py-2 text-sm border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Back to Dashboard
+            <Link href="/admin" className="flex items-center gap-4">
+              <div className="relative w-36 h-10 md:w-48 md:h-14">
+                <Image
+                  src="/jiu-jitsu.png"
+                  alt="The Fort Jiu-Jitsu"
+                  fill
+                  className="object-contain object-left invert"
+                  priority
+                />
+              </div>
+              <div className="border-l border-gray-700 pl-4">
+                <p className="text-gray-400 text-sm">Belt Promotions</p>
+              </div>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <Link
-            href="/admin"
-            className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Members
-          </Link>
-          <Link
-            href="/admin/check-ins"
-            className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Check-ins
-          </Link>
-          <Link
-            href="/admin/waivers"
-            className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Waivers
-          </Link>
-          <Link
-            href="/admin/classes"
-            className="px-4 py-2 border border-gray-700 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Classes
-          </Link>
-          <Link
-            href="/admin/promotions"
-            className="px-4 py-2 bg-white text-black font-medium rounded-lg"
-          >
-            Belt Promotions
-          </Link>
-        </div>
+      {/* Navigation Bar */}
+      <AdminNav />
 
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Page Title */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Belt Promotions</h2>

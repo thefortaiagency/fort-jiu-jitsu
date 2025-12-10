@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Download, Printer, QrCode, Search, Check, X, RefreshCw } from 'lucide-react';
+import { Download, Printer, QrCode, Search, Check, X, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import QRCode from 'qrcode';
+import AdminNav from '../components/AdminNav';
 
 interface Member {
   id: string;
@@ -259,23 +261,44 @@ export default function QRCodeManagement() {
   const unassignedCodes = qrCodes.filter((qr) => !qr.assigned);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
+      {/* Watermark Logo Background */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] opacity-[0.06]">
+          <Image
+            src="/jiu-jitsu.png"
+            alt=""
+            fill
+            className="object-contain invert"
+            priority
+          />
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+      <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 sticky top-0 z-40 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-gray-400 hover:text-white">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">QR Code Management</h1>
-              <p className="text-gray-400">Generate and assign QR codes to members</p>
+          <Link href="/admin" className="flex items-center gap-4">
+            <div className="relative w-36 h-10 md:w-48 md:h-14">
+              <Image
+                src="/jiu-jitsu.png"
+                alt="The Fort Jiu-Jitsu"
+                fill
+                className="object-contain object-left invert"
+                priority
+              />
             </div>
-          </div>
+            <div className="border-l border-gray-700 pl-4">
+              <p className="text-gray-400 text-sm">QR Code Management</p>
+            </div>
+          </Link>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      {/* Navigation Bar */}
+      <AdminNav />
+
+      <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Message */}
         {message && (
           <div
