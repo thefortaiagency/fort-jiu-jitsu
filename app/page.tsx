@@ -14,17 +14,14 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#e2e2e2] dark:border-[#303030]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/">
             <Image
               src="/jiu-jitsu.png"
               alt="The Fort Jiu-Jitsu"
-              width={50}
-              height={50}
+              width={180}
+              height={60}
               className="dark:invert"
             />
-            <span className="font-serif text-xl md:text-2xl font-bold tracking-tight text-[#1b1b1b] dark:text-white hidden sm:inline">
-              The Fort Jiu-Jitsu
-            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -87,10 +84,27 @@ export default function Home() {
         />
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+          {/* Hero Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-8"
+          >
+            <Image
+              src="/jiu-jitsu.png"
+              alt="The Fort Jiu-Jitsu"
+              width={400}
+              height={200}
+              className="mx-auto dark:invert"
+              priority
+            />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#f9f9f9] dark:bg-[#1b1b1b] border border-[#e2e2e2] dark:border-[#303030] text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] mb-8">
               <Shield className="w-4 h-4" />
@@ -101,8 +115,8 @@ export default function Home() {
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-            className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-[#1b1b1b] dark:text-white mb-8 leading-[1.1] tracking-tight"
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="font-serif text-3xl md:text-5xl lg:text-6xl font-bold text-[#1b1b1b] dark:text-white mb-8 leading-[1.1] tracking-tight"
           >
             Forge Your Path.
             <br />
@@ -112,7 +126,7 @@ export default function Home() {
           <motion.p
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             className="text-lg md:text-xl text-[#5e5e5e] dark:text-[#b9b9b9] max-w-2xl mx-auto mb-12 leading-relaxed"
           >
             Where the relentless spirit of wrestling meets the intricate art of Brazilian Jiu-Jitsu.
@@ -263,72 +277,71 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Programs Section */}
+      {/* Schedule & Pricing Section */}
       <section id="programs" className="py-24 md:py-32 bg-[#f9f9f9] dark:bg-[#0a0a0a]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16 md:mb-20">
             <span className="text-sm font-medium text-[#777777] uppercase tracking-wider mb-4 block">
-              Programs
+              2025/26 Season
             </span>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-[#1b1b1b] dark:text-white mb-6">
-              A Path for Every Grappler
+              Class Schedule & Pricing
             </h2>
             <p className="text-lg md:text-xl text-[#5e5e5e] dark:text-[#b9b9b9] max-w-2xl mx-auto">
-              From complete beginners to seasoned competitors, we have a program designed for you.
+              Join us every Tuesday and Wednesday at The Fort Wrestling Facility.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-            {/* Beginner's Gi */}
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto mb-12">
+            {/* Kids Gi Classes */}
             <div className="p-6 md:p-8 bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
               <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">
-                Beginner's Gi Program
+                Kids Gi Classes
               </h3>
-              <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed mb-4">
-                The perfect introduction to Brazilian Jiu-Jitsu. Learn fundamental positions,
-                movements, and submissions in a safe and supportive environment. Ideal for
-                those with little to no combat sports experience.
-              </p>
-              <span className="text-sm font-medium text-[#777777]">All experience levels welcome</span>
+              <div className="space-y-3 mb-6">
+                <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">
+                  <span className="font-medium text-[#1b1b1b] dark:text-white">When:</span> Every Tuesday & Wednesday
+                </p>
+                <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">
+                  <span className="font-medium text-[#1b1b1b] dark:text-white">Time:</span> 5:30 - 6:30 p.m.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#e2e2e2] dark:border-[#303030]">
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white">$75<span className="text-base font-normal text-[#777777]">/month</span></p>
+              </div>
             </div>
 
-            {/* Advanced Gi */}
+            {/* Adult Gi Classes */}
             <div className="p-6 md:p-8 bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
               <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">
-                Advanced Gi Program
+                Adult Gi Classes
               </h3>
-              <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed mb-4">
-                A deeper dive into the art of Jiu-Jitsu. Advanced techniques, strategies, and
-                concepts that will take your game to the next level. Focus on live sparring
-                and competition preparation.
-              </p>
-              <span className="text-sm font-medium text-[#777777]">For experienced practitioners</span>
+              <div className="space-y-3 mb-6">
+                <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">
+                  <span className="font-medium text-[#1b1b1b] dark:text-white">When:</span> Every Tuesday & Wednesday
+                </p>
+                <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">
+                  <span className="font-medium text-[#1b1b1b] dark:text-white">Time:</span> 6:30 - 8:00 p.m.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#e2e2e2] dark:border-[#303030]">
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white">$100<span className="text-base font-normal text-[#777777]">/month</span></p>
+              </div>
             </div>
+          </div>
 
-            {/* Wrestling for Jiu-Jitsu */}
-            <div className="p-6 md:p-8 bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
-              <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">
-                Wrestling for Jiu-Jitsu
-              </h3>
-              <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed mb-4">
-                A dominant takedown game is a game-changer. Led by world-class wrestling coaches,
-                learn the takedowns, throws, and control techniques that will allow you to
-                dictate the pace of any match.
-              </p>
-              <span className="text-sm font-medium text-[#777777]">The wrestling edge</span>
-            </div>
-
-            {/* Kids Programs */}
-            <div className="p-6 md:p-8 bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
-              <h3 className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">
-                Kids Programs
-              </h3>
-              <p className="text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed mb-4">
-                Martial arts is an invaluable tool for a child's development. Fun, engaging,
-                and educational programs teaching wrestling and Jiu-Jitsu fundamentals while
-                building confidence and discipline.
-              </p>
-              <span className="text-sm font-medium text-[#777777]">Ages 5 and up</span>
+          {/* Drop-in & Family Discounts */}
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex flex-col sm:flex-row gap-4 sm:gap-8 items-center justify-center p-6 bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
+              <div>
+                <p className="text-sm text-[#777777] uppercase tracking-wider mb-1">Drop-In</p>
+                <p className="text-xl font-bold text-[#1b1b1b] dark:text-white">$20</p>
+              </div>
+              <div className="hidden sm:block w-px h-12 bg-[#e2e2e2] dark:bg-[#303030]"></div>
+              <div>
+                <p className="text-sm text-[#777777] uppercase tracking-wider mb-1">Family Discounts</p>
+                <p className="text-xl font-bold text-[#1b1b1b] dark:text-white">Available</p>
+              </div>
             </div>
           </div>
         </div>
@@ -478,18 +491,13 @@ export default function Home() {
       <footer className="py-12 md:py-16 bg-white dark:bg-[#0a0a0a] border-t border-[#e2e2e2] dark:border-[#303030]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Image
-                src="/jiu-jitsu.png"
-                alt="The Fort Jiu-Jitsu"
-                width={40}
-                height={40}
-                className="dark:invert"
-              />
-              <span className="font-serif text-xl md:text-2xl font-bold text-[#1b1b1b] dark:text-white">
-                The Fort Jiu-Jitsu
-              </span>
-            </div>
+            <Image
+              src="/jiu-jitsu.png"
+              alt="The Fort Jiu-Jitsu"
+              width={150}
+              height={50}
+              className="dark:invert"
+            />
             <div className="flex items-center gap-6 md:gap-8 text-[#5e5e5e] dark:text-[#b9b9b9]">
               <Link href="#about" className="hover:text-[#1b1b1b] dark:hover:text-white transition-colors">
                 About
