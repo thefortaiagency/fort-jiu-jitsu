@@ -246,64 +246,79 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* Morning Rolls */}
             <ScaleIn delay={0}>
-              <div className="relative group p-8 bg-gradient-to-br from-[#1b1b1b] to-[#303030] dark:from-[#0a0a0a] dark:to-[#1b1b1b] rounded-3xl text-white overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <Sunrise className="w-10 h-10 mb-6 text-[#b9b9b9]" />
-                <h3 className="font-serif text-xl font-bold mb-2">Morning Rolls</h3>
-                <p className="text-[#b9b9b9] text-sm mb-4">Included with membership</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#777777]" />
-                    <span>Mon, Wed, Fri</span>
+              <Link href="/signup" className="block">
+                <div className="relative group p-8 bg-gradient-to-br from-[#1b1b1b] to-[#303030] dark:from-[#0a0a0a] dark:to-[#1b1b1b] rounded-3xl text-white overflow-hidden hover:scale-[1.02] transition-transform cursor-pointer">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                  <Sunrise className="w-10 h-10 mb-6 text-[#b9b9b9]" />
+                  <h3 className="font-serif text-xl font-bold mb-2">Morning Rolls</h3>
+                  <p className="text-[#b9b9b9] text-sm mb-4">Included with membership</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#777777]" />
+                      <span>Mon, Wed, Fri</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#777777]" />
+                      <span>5:00 - 6:00 AM</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#777777]" />
-                    <span>5:00 - 6:00 AM</span>
+                  <div className="mt-4 flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+                    Join Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
-              </div>
+              </Link>
             </ScaleIn>
 
             {/* Kids Classes */}
             <ScaleIn delay={0.1}>
-              <div className="group p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border border-[#e2e2e2] dark:border-[#303030] hover:border-[#1b1b1b] dark:hover:border-white transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#e2e2e2] dark:bg-[#303030] flex items-center justify-center mb-6">
-                  <Users className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
-                </div>
-                <h3 className="font-serif text-xl font-bold text-[#1b1b1b] dark:text-white mb-2">Kids Gi Classes</h3>
-                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">$75<span className="text-sm font-normal text-[#777777]">/mo</span></p>
-                <div className="space-y-2 text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>Tue & Wed</span>
+              <Link href="/signup" className="block">
+                <div className="group p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border border-[#e2e2e2] dark:border-[#303030] hover:border-[#1b1b1b] dark:hover:border-white transition-all hover:scale-[1.02] cursor-pointer">
+                  <div className="w-10 h-10 rounded-xl bg-[#e2e2e2] dark:bg-[#303030] flex items-center justify-center mb-6">
+                    <Users className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>5:30 - 6:30 PM</span>
+                  <h3 className="font-serif text-xl font-bold text-[#1b1b1b] dark:text-white mb-2">Kids Gi Classes</h3>
+                  <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">$75<span className="text-sm font-normal text-[#777777]">/mo</span></p>
+                  <div className="space-y-2 text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>Tue & Wed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>5:30 - 6:30 PM</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] group-hover:text-[#1b1b1b] dark:group-hover:text-white transition-colors">
+                    Sign Up <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
-              </div>
+              </Link>
             </ScaleIn>
 
             {/* Adult Classes */}
             <ScaleIn delay={0.2}>
-              <div className="group p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border border-[#e2e2e2] dark:border-[#303030] hover:border-[#1b1b1b] dark:hover:border-white transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#e2e2e2] dark:bg-[#303030] flex items-center justify-center mb-6">
-                  <Swords className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
-                </div>
-                <h3 className="font-serif text-xl font-bold text-[#1b1b1b] dark:text-white mb-2">Adult Gi Classes</h3>
-                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">$100<span className="text-sm font-normal text-[#777777]">/mo</span></p>
-                <div className="space-y-2 text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>Tue & Wed</span>
+              <Link href="/signup" className="block">
+                <div className="group p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border border-[#e2e2e2] dark:border-[#303030] hover:border-[#1b1b1b] dark:hover:border-white transition-all hover:scale-[1.02] cursor-pointer">
+                  <div className="w-10 h-10 rounded-xl bg-[#e2e2e2] dark:bg-[#303030] flex items-center justify-center mb-6">
+                    <Swords className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>6:30 - 8:00 PM</span>
+                  <h3 className="font-serif text-xl font-bold text-[#1b1b1b] dark:text-white mb-2">Adult Gi Classes</h3>
+                  <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-4">$100<span className="text-sm font-normal text-[#777777]">/mo</span></p>
+                  <div className="space-y-2 text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>Tue & Wed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>6:30 - 8:00 PM</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] group-hover:text-[#1b1b1b] dark:group-hover:text-white transition-colors">
+                    Sign Up <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
-              </div>
+              </Link>
             </ScaleIn>
           </div>
 
