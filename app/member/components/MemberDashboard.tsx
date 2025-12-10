@@ -98,6 +98,20 @@ interface Waiver {
   expiresAt: string;
 }
 
+interface SubscriptionInfo {
+  id: string;
+  status: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  nextBillingDate: string;
+  cancelAtPeriodEnd: boolean;
+  cancelAt: string | null;
+  amount: number;
+  interval: string;
+  isInTrial: boolean;
+  trialEnd: string | null;
+}
+
 type TabType = 'overview' | 'checkins' | 'profile' | 'family';
 
 export default function MemberDashboard({ email, onLogout }: MemberDashboardProps) {
@@ -115,6 +129,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
   useEffect(() => {
     loadMemberData();
@@ -156,6 +171,15 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       if (waiversRes.ok) {
         const waiversData = await waiversRes.json();
         setWaivers(waiversData.waivers || []);
+      }
+
+      // Fetch subscription details
+      const subscriptionRes = await fetch(`/api/member/subscription?memberId=${memberData.member.id}`);
+      if (subscriptionRes.ok) {
+        const subscriptionData = await subscriptionRes.json();
+        if (subscriptionData.hasSubscription) {
+          setSubscription(subscriptionData.subscription);
+        }
       }
     } catch (err) {
       console.error('Error loading member data:', err);
@@ -503,9 +527,48 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Monthly Rate</p>
-                  <p className="font-medium">${member.individualMonthlyCost}/mo</p>
+                  <p className="font-medium">${subscription?.amount || member.individualMonthlyCost}/{subscription?.interval || 'mo'}</p>
                 </div>
               </div>
+
+              {/* Subscription Billing Info */}
+              {subscription && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {subscription.isInTrial && subscription.trialEnd ? (
+                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                        <div className="flex items-center gap-2 text-blue-400 mb-1">
+                          <Clock className="w-4 h-4" />
+                          <p className="text-sm font-medium">Free Trial Active</p>
+                        </div>
+                        <p className="text-white font-medium">
+                          Trial ends {formatDate(subscription.trialEnd)}
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          First charge of ${subscription.amount} on {formatDate(subscription.trialEnd)}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Next Billing Date</p>
+                        <p className="font-medium text-white">
+                          {formatDate(subscription.nextBillingDate)}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          ${subscription.amount} will be charged
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Billing Period</p>
+                      <p className="font-medium capitalize">{subscription.interval}ly</p>
+                      <p className="text-sm text-gray-400">
+                        Current period: {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Recent Check-ins Preview */}
