@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (checkInError) {
       console.error('Error creating check-in:', checkInError);
       return NextResponse.json(
-        { error: 'Failed to create check-in' },
+        { error: checkInError.message || 'Failed to create check-in' },
         { status: 500 }
       );
     }
