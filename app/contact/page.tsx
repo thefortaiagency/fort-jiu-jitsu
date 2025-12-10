@@ -18,17 +18,35 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formState),
+      });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormState({ name: '', email: '', phone: '', message: '', interest: 'general' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message');
+      }
+
+      setIsSubmitted(true);
+      setFormState({ name: '', email: '', phone: '', message: '', interest: 'general' });
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -104,6 +122,11 @@ export default function ContactPage() {
                       onSubmit={handleSubmit}
                       className="space-y-6"
                     >
+                      {error && (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+                          {error}
+                        </div>
+                      )}
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <label htmlFor="name" className="block text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] mb-2">

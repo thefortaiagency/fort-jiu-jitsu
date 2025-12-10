@@ -14,16 +14,24 @@ const instructors = [
     title: 'Head Instructor',
     rank: 'Black Belt',
     nickname: '"El Terrible"',
-    bio: 'Anton brings years of competition experience and a passion for teaching to The Fort Jiu-Jitsu. His technical precision and dedication to the art make him an exceptional instructor for students of all levels.',
-    specialties: ['Competition Preparation', 'Technical Drilling', 'Guard Systems'],
+    bio: 'Anton Talamantes is a true legend in the Fort Wayne martial arts scene. With an incredible 37 years of wrestling experience and 18 years in Jiu-Jitsu, Anton brings a wealth of knowledge and a warrior\'s spirit to our academy. A two-time state champion wrestler from Fort Wayne Bishop Dwenger, Anton\'s competitive drive led him to a successful professional MMA career. He was instrumental in the founding of The Fort Wrestling Facility and played a key role in the creation of The Fort Jiu-Jitsu.',
+    specialties: ['Competition Preparation', 'MMA Integration', 'Wrestling'],
   },
   {
     name: 'Nick Strahm',
     title: 'Instructor',
     rank: 'Purple Belt',
     nickname: null,
-    bio: 'Nick combines his wrestling background with his Jiu-Jitsu journey to provide students with a well-rounded grappling education. His attention to detail and patient teaching style make complex techniques accessible.',
-    specialties: ['Wrestling Integration', 'Takedowns', 'Top Control'],
+    bio: 'Nick Strahm\'s journey is a testament to the healing power of Jiu-Jitsu. A Marine and Army veteran who served three tours in Iraq, Nick discovered Brazilian Jiu-Jitsu as a way to cope with the challenges of post-traumatic stress. The focus, discipline, and camaraderie he found on the mat not only changed his life but also ignited a passion for helping others. He is particularly passionate about working with beginners and children, creating a welcoming and supportive environment.',
+    specialties: ['Beginners', 'Kids Classes', 'Fundamentals'],
+  },
+  {
+    name: 'Tracy Yost',
+    title: 'Fitness & Wellness Coach',
+    rank: 'Practitioner',
+    nickname: null,
+    bio: 'Tracy Yost is a Personal Trainer and Wellness Coach with over a decade of experience helping clients achieve their personal best. A former collegiate athlete and fitness competitor, Tracy brings a deep understanding of physical fitness and a passion for combat sports. She is an avid practitioner of both boxing and Brazilian Jiu-Jitsu. Tracy\'s unique expertise in both fitness and martial arts makes her an invaluable resource for our students.',
+    specialties: ['Strength & Conditioning', 'Wellness', 'Athletic Performance'],
   },
 ];
 
@@ -42,14 +50,15 @@ export default function InstructorsPage() {
             className="max-w-3xl"
           >
             <span className="text-sm font-medium text-[#777777] uppercase tracking-wider mb-4 block">
-              Our Team
+              Led by Champions
             </span>
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-[#1b1b1b] dark:text-white mb-6 leading-tight">
-              Learn From the Best
+              Forged in Fort Wayne
             </h1>
             <p className="text-lg md:text-xl text-[#5e5e5e] dark:text-[#b9b9b9] leading-relaxed">
-              Our instructors bring a wealth of knowledge, competition experience, and a genuine
-              passion for helping students reach their potential.
+              Our instructors are the heart of The Fort Jiu-Jitsu. They are not just highly decorated
+              martial artists; they are passionate teachers, dedicated mentors, and pillars of the
+              Fort Wayne grappling community.
             </p>
           </motion.div>
         </div>
@@ -58,7 +67,7 @@ export default function InstructorsPage() {
       {/* Instructors Grid */}
       <section className="py-20 bg-white dark:bg-[#1b1b1b]">
         <div className="max-w-7xl mx-auto px-6">
-          <StaggerChildren className="grid md:grid-cols-2 gap-12">
+          <StaggerChildren className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
             {instructors.map((instructor) => (
               <StaggerItem key={instructor.name}>
                 <div className="group">
