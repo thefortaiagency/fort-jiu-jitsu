@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Search, CheckCircle, XCircle, User, Users, QrCode } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, CheckCircle, XCircle, User, Users, QrCode, Camera, Keyboard } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface Member {
   id: string;
@@ -10,7 +11,6 @@ interface Member {
   email: string;
   program: string;
   status: string;
-  member_code?: string;
 }
 
 interface CheckInResult {
@@ -26,9 +26,13 @@ export default function CheckInKiosk() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'dropdown' | 'barcode'>('dropdown');
+  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual'>('dropdown');
   const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerRef = useRef<HTMLDivElement>(null);
 
   // Load members on mount
   useEffect(() => {
@@ -36,12 +40,80 @@ export default function CheckInKiosk() {
     loadRecentCheckIns();
   }, []);
 
-  // Focus barcode input when in barcode mode
+  // Focus manual input when in manual mode
   useEffect(() => {
-    if (mode === 'barcode' && barcodeInputRef.current) {
+    if (mode === 'manual' && barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
   }, [mode]);
+
+  // Handle camera scanning
+  const startScanner = useCallback(async () => {
+    if (!scannerContainerRef.current || isScanning) return;
+
+    setCameraError(null);
+
+    try {
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        },
+        async (decodedText) => {
+          // Successfully scanned
+          console.log('Scanned:', decodedText);
+          await handleScannedCode(decodedText);
+        },
+        (errorMessage) => {
+          // Ignore scan errors (no code detected)
+          console.debug('Scan attempt:', errorMessage);
+        }
+      );
+
+      setIsScanning(true);
+    } catch (err) {
+      console.error('Camera error:', err);
+      setCameraError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to access camera. Please allow camera permissions or use manual entry.'
+      );
+    }
+  }, [isScanning]);
+
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current && isScanning) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+        setIsScanning(false);
+      } catch (err) {
+        console.error('Error stopping scanner:', err);
+      }
+    }
+  }, [isScanning]);
+
+  // Start/stop scanner based on mode
+  useEffect(() => {
+    if (mode === 'scan') {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        startScanner();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      stopScanner();
+    }
+
+    return () => {
+      stopScanner();
+    };
+  }, [mode, startScanner, stopScanner]);
 
   async function loadMembers() {
     try {
@@ -73,7 +145,7 @@ export default function CheckInKiosk() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           member_id: member.id,
-          check_in_method: mode === 'barcode' ? 'barcode' : 'kiosk',
+          check_in_method: mode === 'dropdown' ? 'kiosk' : 'barcode',
         }),
       });
 
@@ -87,6 +159,8 @@ export default function CheckInKiosk() {
         });
         // Add to recent check-ins
         setRecentCheckIns((prev) => [member, ...prev.slice(0, 4)]);
+        // Reload recent check-ins to get accurate count
+        loadRecentCheckIns();
       } else {
         setCheckInResult({
           success: false,
@@ -113,15 +187,15 @@ export default function CheckInKiosk() {
     }
   }
 
-  async function handleBarcodeSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!barcodeInput.trim()) return;
+  async function handleScannedCode(code: string) {
+    if (isLoading) return;
 
+    // Stop scanner temporarily
+    await stopScanner();
     setIsLoading(true);
 
     try {
-      // Look up member by barcode/member code
-      const res = await fetch(`/api/members/lookup?code=${encodeURIComponent(barcodeInput)}`);
+      const res = await fetch(`/api/members/lookup?code=${encodeURIComponent(code)}`);
       const data = await res.json();
 
       if (data.member) {
@@ -129,21 +203,38 @@ export default function CheckInKiosk() {
       } else {
         setCheckInResult({
           success: false,
-          message: 'Member not found. Please try again or use dropdown.',
+          message: 'Member not found. Please try again.',
         });
-        setTimeout(() => setCheckInResult(null), 3000);
+        setTimeout(() => {
+          setCheckInResult(null);
+          // Restart scanner after error
+          if (mode === 'scan') {
+            startScanner();
+          }
+        }, 3000);
       }
     } catch (error) {
       setCheckInResult({
         success: false,
         message: 'Lookup failed. Please try again.',
       });
-      setTimeout(() => setCheckInResult(null), 3000);
+      setTimeout(() => {
+        setCheckInResult(null);
+        if (mode === 'scan') {
+          startScanner();
+        }
+      }, 3000);
     } finally {
       setIsLoading(false);
-      setBarcodeInput('');
-      barcodeInputRef.current?.focus();
     }
+  }
+
+  async function handleManualSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!barcodeInput.trim()) return;
+    await handleScannedCode(barcodeInput.trim());
+    setBarcodeInput('');
+    barcodeInputRef.current?.focus();
   }
 
   const filteredMembers = members.filter((m) => {
@@ -180,25 +271,36 @@ export default function CheckInKiosk() {
               <span className="hidden sm:inline">Name</span>
             </button>
             <button
-              onClick={() => setMode('barcode')}
+              onClick={() => setMode('scan')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                mode === 'barcode'
+                mode === 'scan'
                   ? 'bg-white text-black'
                   : 'border border-gray-700 hover:bg-gray-800'
               }`}
             >
-              <QrCode className="w-5 h-5" />
-              <span className="hidden sm:inline">Scan</span>
+              <Camera className="w-5 h-5" />
+              <span className="hidden sm:inline">Camera</span>
+            </button>
+            <button
+              onClick={() => setMode('manual')}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                mode === 'manual'
+                  ? 'bg-white text-black'
+                  : 'border border-gray-700 hover:bg-gray-800'
+              }`}
+            >
+              <Keyboard className="w-5 h-5" />
+              <span className="hidden sm:inline">Type</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-8 pb-24">
         {/* Success/Error Message */}
         {checkInResult && (
           <div
-            className={`mb-8 p-6 rounded-2xl flex items-center gap-4 animate-pulse ${
+            className={`mb-8 p-6 rounded-2xl flex items-center gap-4 ${
               checkInResult.success
                 ? 'bg-green-900/50 border-2 border-green-500'
                 : 'bg-red-900/50 border-2 border-red-500'
@@ -226,21 +328,63 @@ export default function CheckInKiosk() {
           </div>
         )}
 
-        {/* Barcode Mode */}
-        {mode === 'barcode' && (
+        {/* Camera Scan Mode */}
+        {mode === 'scan' && (
           <div className="mb-8">
-            <form onSubmit={handleBarcodeSubmit} className="relative">
+            <div className="bg-gray-900 border-2 border-gray-700 rounded-2xl p-6">
+              {cameraError ? (
+                <div className="text-center py-8">
+                  <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+                  <p className="text-red-400 mb-4">{cameraError}</p>
+                  <button
+                    onClick={() => {
+                      setCameraError(null);
+                      startScanner();
+                    }}
+                    className="px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-200"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <p className="text-xl text-gray-400">
+                      Point camera at QR code or barcode
+                    </p>
+                  </div>
+                  <div
+                    id="qr-reader"
+                    ref={scannerContainerRef}
+                    className="mx-auto rounded-xl overflow-hidden bg-black"
+                    style={{ maxWidth: '400px' }}
+                  />
+                  {isLoading && (
+                    <div className="text-center mt-4">
+                      <p className="text-xl text-white animate-pulse">Processing...</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Manual Entry Mode */}
+        {mode === 'manual' && (
+          <div className="mb-8">
+            <form onSubmit={handleManualSubmit} className="relative">
               <div className="bg-gray-900 border-2 border-gray-700 rounded-2xl p-8 text-center">
                 <QrCode className="w-20 h-20 mx-auto mb-4 text-gray-600" />
                 <p className="text-xl text-gray-400 mb-6">
-                  Scan your member barcode or enter your member ID
+                  Type member ID, last 4 of phone, or name
                 </p>
                 <input
                   ref={barcodeInputRef}
                   type="text"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
-                  placeholder="Scan or type member code..."
+                  placeholder="Enter code or name..."
                   className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-6 py-4 text-2xl text-center focus:ring-2 focus:ring-white focus:border-transparent"
                   autoFocus
                   autoComplete="off"
@@ -360,7 +504,7 @@ export default function CheckInKiosk() {
                     <User className="w-4 h-4 text-gray-500" />
                   </div>
                   <span className="text-sm">
-                    {member.first_name} {member.last_name.charAt(0)}.
+                    {member.first_name} {member.last_name?.charAt(0) || ''}.
                   </span>
                   <CheckCircle className="w-4 h-4 text-green-500" />
                 </div>
