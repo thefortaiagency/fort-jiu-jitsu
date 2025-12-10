@@ -24,6 +24,7 @@ import {
   MapPin,
   Heart,
   Star,
+  Ban,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -111,6 +112,9 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     loadMemberData();
@@ -182,6 +186,42 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     }
 
     setTimeout(() => setSaveMessage(null), 3000);
+  };
+
+  const handleCancelMembership = async () => {
+    if (!member) return;
+
+    setIsCancelling(true);
+    try {
+      const res = await fetch('/api/member/cancel-membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member.id,
+          reason: cancelReason,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSaveMessage({
+          type: 'success',
+          text: data.message || 'Your membership has been scheduled for cancellation.'
+        });
+        setShowCancelModal(false);
+        setCancelReason('');
+        loadMemberData(); // Reload to show updated status
+      } else {
+        const data = await res.json();
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to cancel membership' });
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setIsCancelling(false);
+    }
+
+    setTimeout(() => setSaveMessage(null), 5000);
   };
 
   if (isLoading) {
@@ -405,6 +445,14 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                 <p className={`text-2xl font-bold ${validWaiver ? 'text-green-400' : 'text-red-400'}`}>
                   {validWaiver ? 'Valid' : 'Expired'}
                 </p>
+                {!validWaiver && (
+                  <Link
+                    href="/member/renew-waiver"
+                    className="mt-3 inline-block text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition-colors"
+                  >
+                    Renew Now
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -419,10 +467,31 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
 
             {/* Membership Info */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-              <div className="flex items-center gap-3 mb-6">
-                <CreditCard className="w-6 h-6 text-purple-400" />
-                <h2 className="text-xl font-bold">Membership</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-6 h-6 text-purple-400" />
+                  <h2 className="text-xl font-bold">Membership</h2>
+                </div>
+                {member.status !== 'pending_cancellation' && member.status !== 'cancelled' && (
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="text-sm text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    Cancel Membership
+                  </button>
+                )}
               </div>
+              {member.status === 'pending_cancellation' && (
+                <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 text-yellow-400">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="font-medium">Cancellation Pending</p>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Your membership will end at the end of your current billing period.
+                  </p>
+                </div>
+              )}
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Program</p>
@@ -773,6 +842,85 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
           </Link>
         </div>
       </div>
+
+      {/* Cancel Membership Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+            onClick={() => !isCancelling && setShowCancelModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 rounded-2xl p-6 md:p-8 max-w-md w-full border border-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-red-900/30 flex items-center justify-center">
+                  <Ban className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Cancel Membership</h3>
+                  <p className="text-sm text-gray-400">We&apos;re sorry to see you go</p>
+                </div>
+              </div>
+
+              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 mb-6">
+                <p className="text-sm text-yellow-200">
+                  Your membership will remain active until the end of your current billing period.
+                  You can continue training until then.
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-gray-400">
+                  Help us improve - why are you leaving? (optional)
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Tell us why you're cancelling..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  Keep Membership
+                </button>
+                <button
+                  onClick={handleCancelMembership}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isCancelling ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm Cancellation'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
