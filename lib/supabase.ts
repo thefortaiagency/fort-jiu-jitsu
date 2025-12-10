@@ -61,6 +61,11 @@ export interface Member {
   stripe_subscription_id?: string;
   last_payment_date?: string;
   payment_status: 'pending' | 'active' | 'past_due' | 'cancelled';
+  // Belt Progression (BJJ)
+  current_belt_id?: string;
+  current_stripes?: number;
+  belt_updated_at?: string;
+  total_classes_attended?: number;
   // Timestamps
   created_at: string;
   updated_at: string;

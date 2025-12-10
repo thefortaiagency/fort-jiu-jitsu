@@ -10,7 +10,9 @@ import Footer from '../../components/Footer';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const memberName = searchParams.get('name');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (sessionId) {
@@ -19,13 +21,21 @@ function SuccessContent() {
         .then((res) => res.json())
         .then((data) => {
           setStatus(data.success ? 'success' : 'error');
+          if (data.success) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 5000);
+          }
         })
         .catch(() => {
           // Even if verification fails, show success since Stripe redirected here
           setStatus('success');
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 5000);
         });
     } else {
       setStatus('success');
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
     }
   }, [sessionId]);
 
@@ -42,89 +52,220 @@ function SuccessContent() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-xl mx-auto text-center"
+      className="max-w-2xl mx-auto text-center"
     >
-      {/* Success Icon */}
-      <div className="w-24 h-24 mx-auto mb-8 bg-green-500 rounded-full flex items-center justify-center">
-        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
+      {/* Animated Celebration */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{
+                x: Math.random() * window.innerWidth,
+                y: -20,
+                rotate: 0,
+              }}
+              animate={{
+                y: window.innerHeight + 20,
+                rotate: 360,
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                ease: 'linear',
+                delay: Math.random() * 0.5,
+              }}
+              className="absolute w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: ['#fff', '#000', '#888'][Math.floor(Math.random() * 3)],
+              }}
+            />
+          ))}
+        </div>
+      )}
 
-      <h1 className="text-4xl font-serif mb-4">Welcome to The Fort!</h1>
+      {/* Success Icon with Animation */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+        className="w-24 h-24 mx-auto mb-8 bg-green-500 rounded-full flex items-center justify-center"
+      >
+        <motion.svg
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="w-12 h-12 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <motion.path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M5 13l4 4L19 7"
+          />
+        </motion.svg>
+      </motion.div>
 
-      <p className="text-xl text-gray-300 mb-8">
+      <motion.h1
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="text-4xl font-serif mb-4"
+      >
+        Welcome to The Fort{memberName ? `, ${memberName}` : ''}!
+      </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="text-xl text-gray-300 mb-8"
+      >
         Your membership is now active. We can&apos;t wait to see you on the mats!
-      </p>
+      </motion.p>
 
-      {/* Next Steps */}
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8 text-left">
-        <h2 className="font-bold text-lg mb-4">What&apos;s Next?</h2>
-        <ul className="space-y-3">
-          <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">
+      {/* Next Steps with Icons */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2 }}
+        className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8 text-left"
+      >
+        <h2 className="font-bold text-lg mb-6 text-center">What&apos;s Next?</h2>
+        <div className="space-y-4">
+          <div className="flex items-start gap-4 p-4 bg-black rounded-lg">
+            <div className="flex-shrink-0 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center text-lg font-bold">
               1
-            </span>
-            <span>
-              <strong>Check your email</strong> - We&apos;ve sent a confirmation with your membership
-              details.
-            </span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">
-              2
-            </span>
-            <span>
-              <strong>Come to class!</strong> - See our{' '}
-              <Link href="/schedule" className="underline hover:text-gray-300">
-                schedule
-              </Link>{' '}
-              for class times.
-            </span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">
-              3
-            </span>
-            <span>
-              <strong>What to bring</strong> - Wear comfortable athletic clothes for your first
-              class. We&apos;ll provide a loaner gi if you don&apos;t have one yet.
-            </span>
-          </li>
-        </ul>
-      </div>
+            </div>
+            <div>
+              <h3 className="font-bold mb-1">Check your email</h3>
+              <p className="text-sm text-gray-400">
+                We&apos;ve sent a confirmation with your membership details and member QR code for quick check-ins.
+              </p>
+            </div>
+          </div>
 
-      {/* Location Reminder */}
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8">
-        <h3 className="font-bold mb-2">Find Us At</h3>
-        <p className="text-gray-300">
-          1519 Goshen Road<br />
-          Fort Wayne, IN 46808
-        </p>
+          <div className="flex items-start gap-4 p-4 bg-black rounded-lg">
+            <div className="flex-shrink-0 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center text-lg font-bold">
+              2
+            </div>
+            <div>
+              <h3 className="font-bold mb-1">Complete your onboarding</h3>
+              <p className="text-sm text-gray-400 mb-2">
+                Take 5 minutes to learn what to expect in your first class.
+              </p>
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center gap-2 text-sm text-white hover:text-gray-300 transition-colors underline"
+              >
+                Start Onboarding →
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 p-4 bg-black rounded-lg">
+            <div className="flex-shrink-0 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center text-lg font-bold">
+              3
+            </div>
+            <div>
+              <h3 className="font-bold mb-1">View class schedule</h3>
+              <p className="text-sm text-gray-400 mb-2">
+                See when our next classes are and plan your first visit.
+              </p>
+              <Link
+                href="/schedule"
+                className="inline-flex items-center gap-2 text-sm text-white hover:text-gray-300 transition-colors underline"
+              >
+                View Schedule →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4 }}
+        className="grid md:grid-cols-2 gap-4 mb-8"
+      >
+        <Link
+          href="/onboarding/first-class"
+          className="p-6 bg-gray-900 border border-gray-700 rounded-lg hover:border-white transition-all group"
+        >
+          <div className="text-3xl mb-2">📚</div>
+          <h3 className="font-bold mb-1 group-hover:text-gray-300">First Class Guide</h3>
+          <p className="text-sm text-gray-400">What to bring, what to expect, and gym etiquette</p>
+        </Link>
+
         <a
           href="https://maps.google.com/?q=1519+Goshen+Road+Fort+Wayne+IN+46808"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-3 text-sm underline hover:text-gray-300"
+          className="p-6 bg-gray-900 border border-gray-700 rounded-lg hover:border-white transition-all group"
         >
-          Get Directions →
+          <div className="text-3xl mb-2">📍</div>
+          <h3 className="font-bold mb-1 group-hover:text-gray-300">Get Directions</h3>
+          <p className="text-sm text-gray-400">1519 Goshen Road, Fort Wayne, IN 46808</p>
         </a>
-      </div>
+      </motion.div>
+
+      {/* Social Sharing */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.6 }}
+        className="mb-8 p-6 bg-gradient-to-r from-gray-900 to-black border border-gray-700 rounded-lg"
+      >
+        <p className="text-gray-400 mb-4">
+          Excited to start your BJJ journey? Share the news! 🥋
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <button
+            onClick={() => {
+              const text = "I just joined The Fort Jiu-Jitsu! 🥋 Excited to start my Brazilian Jiu-Jitsu journey!";
+              if (navigator.share) {
+                navigator.share({ text });
+              } else {
+                navigator.clipboard.writeText(text);
+                alert('Copied to clipboard!');
+              }
+            }}
+            className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Share Your Journey
+          </button>
+        </div>
+      </motion.div>
 
       {/* Contact */}
-      <p className="text-gray-400 mb-8">
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.8 }}
+        className="text-gray-400 mb-8"
+      >
         Questions? Call us at{' '}
-        <a href="tel:260-452-7615" className="underline hover:text-white">
+        <a href="tel:260-452-7615" className="underline hover:text-white font-medium">
           (260) 452-7615
         </a>
-      </p>
+      </motion.p>
 
-      <Link
-        href="/"
-        className="inline-block px-8 py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2 }}
       >
-        Back to Home
-      </Link>
+        <Link
+          href="/"
+          className="inline-block px-8 py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Back to Home
+        </Link>
+      </motion.div>
     </motion.div>
   );
 }

@@ -14,13 +14,27 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    // For production, you should verify the webhook signature
-    // event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-    // For now, just parse the event
-    event = JSON.parse(body) as Stripe.Event;
+    // Verify webhook signature for production security
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (webhookSecret) {
+      // Production: Verify signature
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log('✓ Webhook signature verified');
+    } else {
+      // Development: Skip verification (but log warning)
+      console.warn('⚠️ STRIPE_WEBHOOK_SECRET not set - skipping signature verification');
+      event = JSON.parse(body) as Stripe.Event;
+    }
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Invalid signature',
+        message: err instanceof Error ? err.message : 'Signature verification failed',
+      },
+      { status: 400 }
+    );
   }
 
   const supabase = createServerSupabaseClient();
@@ -51,25 +65,70 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const isFamilySubscription = subscription.metadata?.is_family_subscription === 'true';
 
-        // Find member by Stripe customer ID
-        const { data: member } = await supabase
-          .from('members')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
+        if (isFamilySubscription) {
+          // Handle family subscription update
+          const familyAccountId = subscription.metadata?.family_account_id;
+          const memberCount = parseInt(subscription.metadata?.member_count || '0', 10);
+          const monthlyRate = parseFloat(subscription.metadata?.monthly_rate || '0');
 
-        if (member) {
-          const status = subscription.status === 'active' ? 'active' : 'past_due';
-          await supabase
+          // Update all family members
+          const { data: familyMembers } = await supabase
             .from('members')
-            .update({
-              status: status,
-              payment_status: subscription.status,
-            })
-            .eq('id', member.id);
+            .select('id')
+            .or(`id.eq.${familyAccountId},family_account_id.eq.${familyAccountId}`);
 
-          console.log(`Member ${member.id} subscription updated to ${subscription.status}`);
+          if (familyMembers) {
+            const memberIds = familyMembers.map((m) => m.id);
+            const status = subscription.status === 'active' ? 'active' : 'past_due';
+
+            await supabase
+              .from('members')
+              .update({
+                status: status,
+                payment_status: subscription.status,
+              })
+              .in('id', memberIds);
+
+            console.log(
+              `Family ${familyAccountId} (${memberCount} members) subscription updated to ${subscription.status}`
+            );
+          }
+
+          // Update family_accounts table
+          if (familyAccountId) {
+            await supabase
+              .from('family_accounts')
+              .update({
+                stripe_subscription_id: subscription.id,
+                total_members: memberCount,
+                monthly_rate: monthlyRate,
+                is_active: subscription.status === 'active',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('primary_member_id', familyAccountId);
+          }
+        } else {
+          // Handle individual subscription update
+          const { data: member } = await supabase
+            .from('members')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+
+          if (member) {
+            const status = subscription.status === 'active' ? 'active' : 'past_due';
+            await supabase
+              .from('members')
+              .update({
+                status: status,
+                payment_status: subscription.status,
+              })
+              .eq('id', member.id);
+
+            console.log(`Member ${member.id} subscription updated to ${subscription.status}`);
+          }
         }
         break;
       }
@@ -77,24 +136,61 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const isFamilySubscription = subscription.metadata?.is_family_subscription === 'true';
 
-        // Find member by Stripe customer ID
-        const { data: member } = await supabase
-          .from('members')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
+        if (isFamilySubscription) {
+          // Handle family subscription cancellation
+          const familyAccountId = subscription.metadata?.family_account_id;
 
-        if (member) {
-          await supabase
+          // Update all family members to cancelled
+          const { data: familyMembers } = await supabase
             .from('members')
-            .update({
-              status: 'cancelled',
-              payment_status: 'cancelled',
-            })
-            .eq('id', member.id);
+            .select('id')
+            .or(`id.eq.${familyAccountId},family_account_id.eq.${familyAccountId}`);
 
-          console.log(`Member ${member.id} subscription cancelled`);
+          if (familyMembers) {
+            const memberIds = familyMembers.map((m) => m.id);
+
+            await supabase
+              .from('members')
+              .update({
+                status: 'cancelled',
+                payment_status: 'cancelled',
+              })
+              .in('id', memberIds);
+
+            console.log(`Family ${familyAccountId} subscription cancelled`);
+          }
+
+          // Update family_accounts table
+          if (familyAccountId) {
+            await supabase
+              .from('family_accounts')
+              .update({
+                is_active: false,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('primary_member_id', familyAccountId);
+          }
+        } else {
+          // Handle individual subscription cancellation
+          const { data: member } = await supabase
+            .from('members')
+            .select('id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+
+          if (member) {
+            await supabase
+              .from('members')
+              .update({
+                status: 'cancelled',
+                payment_status: 'cancelled',
+              })
+              .eq('id', member.id);
+
+            console.log(`Member ${member.id} subscription cancelled`);
+          }
         }
         break;
       }

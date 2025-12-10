@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, getFamilyMembers, linkToFamily, getFamilyBilling } from '@/lib/supabase';
+import {
+  createServerSupabaseClient,
+  getFamilyMembers,
+  linkToFamily,
+  getFamilyBilling,
+} from '@/lib/supabase';
+import { calculateFamilyPrice, MemberType } from '@/lib/stripe';
 
-// GET /api/family?memberId=xxx - Get all family members
+// GET /api/family?memberId=xxx - Get all family members with detailed billing
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
 
     if (!memberId) {
-      return NextResponse.json(
-        { error: 'Member ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Member ID is required' }, { status: 400 });
     }
 
     const { data: familyMembers, error } = await getFamilyMembers(memberId);
 
     if (error) {
       console.error('Error fetching family members:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch family members' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to fetch family members' }, { status: 500 });
     }
 
     // Get billing information
@@ -31,10 +31,36 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching billing info:', billingError);
     }
 
+    // Calculate detailed pricing if we have family members
+    let detailedPricing = null;
+    if (familyMembers && familyMembers.length > 0) {
+      const memberTypes: MemberType[] = familyMembers.map((m) =>
+        m.program?.includes('kid') ? 'kid' : 'adult'
+      );
+      detailedPricing = calculateFamilyPrice(memberTypes);
+    }
+
+    // Get family account record if exists
+    const supabase = createServerSupabaseClient();
+    const primaryMember = familyMembers?.find((m) => m.is_primary_account_holder);
+
+    let familyAccount = null;
+    if (primaryMember) {
+      const { data: familyAccountData } = await supabase
+        .from('family_accounts')
+        .select('*')
+        .eq('primary_member_id', primaryMember.id)
+        .single();
+
+      familyAccount = familyAccountData;
+    }
+
     return NextResponse.json({
       success: true,
       familyMembers,
       billing: billingInfo || null,
+      pricing: detailedPricing,
+      familyAccount,
     });
   } catch (error) {
     console.error('Family API error:', error);
@@ -121,6 +147,84 @@ export async function POST(request: NextRequest) {
     console.error('Link family API error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to link family members' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/family - Update family account settings
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { primaryMemberId, familyName, metadata } = body;
+
+    if (!primaryMemberId) {
+      return NextResponse.json(
+        { error: 'Primary member ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createServerSupabaseClient();
+
+    // Verify primary member exists and is primary account holder
+    const { data: primaryMember, error: memberError } = await supabase
+      .from('members')
+      .select('id, is_primary_account_holder, first_name, last_name')
+      .eq('id', primaryMemberId)
+      .single();
+
+    if (memberError || !primaryMember) {
+      return NextResponse.json(
+        { error: 'Primary member not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!primaryMember.is_primary_account_holder) {
+      return NextResponse.json(
+        { error: 'Member is not a primary account holder' },
+        { status: 400 }
+      );
+    }
+
+    // Update family account
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (familyName) {
+      updateData.family_name = familyName;
+    }
+
+    if (metadata) {
+      updateData.metadata = metadata;
+    }
+
+    const { data: updatedFamily, error: updateError } = await supabase
+      .from('family_accounts')
+      .update(updateData)
+      .eq('primary_member_id', primaryMemberId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating family account:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update family account' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Family account updated successfully',
+      familyAccount: updatedFamily,
+    });
+  } catch (error) {
+    console.error('Update family API error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update family account' },
       { status: 500 }
     );
   }
