@@ -283,7 +283,7 @@ export default function CheckInKiosk() {
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
       {/* Watermark Logo Background */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div className="relative w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] opacity-[0.03]">
+        <div className="relative w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] opacity-[0.07]">
           <Image
             src="/jiu-jitsu.png"
             alt=""

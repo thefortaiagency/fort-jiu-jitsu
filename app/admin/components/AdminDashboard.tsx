@@ -152,7 +152,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative overflow-hidden">
       {/* Watermark Logo Background */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div className="relative w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] opacity-[0.02]">
+        <div className="relative w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] opacity-[0.06]">
           <Image
             src="/jiu-jitsu.png"
             alt=""
