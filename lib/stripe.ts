@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { createServerSupabaseClient } from './supabase';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-11-17.clover',
+  apiVersion: '2025-02-24.acacia',
 });
 
 // Membership pricing

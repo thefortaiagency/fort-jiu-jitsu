@@ -26,7 +26,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-11-17.clover',
+  apiVersion: '2025-02-24.acacia',
 });
 
 // Color codes for terminal output
