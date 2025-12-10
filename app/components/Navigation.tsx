@@ -41,9 +41,9 @@ export default function Navigation() {
           <Image
             src="/jiu-jitsu.png"
             alt="The Fort Jiu-Jitsu"
-            width={160}
-            height={53}
-            className="dark:invert"
+            width={120}
+            height={40}
+            className="dark:invert w-[100px] md:w-[120px] h-auto"
             priority
           />
         </Link>

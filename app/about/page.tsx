@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Shield, Swords, Users, Target, Award, Heart } from 'lucide-react';
+import { ArrowRight, Shield, Swords, Users, Target, Award, Heart, Droplets, Dumbbell, Square } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -160,8 +160,93 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
+      {/* Facilities Section */}
       <section className="py-20 bg-white dark:bg-[#1b1b1b]">
+        <div className="max-w-7xl mx-auto px-6">
+          <FadeIn className="text-center mb-16">
+            <span className="text-sm font-medium text-[#777777] uppercase tracking-wider mb-4 block">
+              Our Facility
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1b1b1b] dark:text-white mb-6">
+              World-Class Training Space
+            </h2>
+            <p className="text-lg text-[#5e5e5e] dark:text-[#b9b9b9] max-w-2xl mx-auto">
+              Train in a purpose-built facility designed for serious grapplers, with everything
+              you need to take your skills to the next level.
+            </p>
+          </FadeIn>
+
+          <StaggerChildren className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <Square className="w-7 h-7 text-white dark:text-[#1b1b1b]" />
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">4,000+</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Sq Ft of Mats</p>
+              </div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <Droplets className="w-7 h-7 text-white dark:text-[#1b1b1b]" />
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">5</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Hot Showers</p>
+              </div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <Dumbbell className="w-7 h-7 text-white dark:text-[#1b1b1b]" />
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">Full</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Weight Room</p>
+              </div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <svg className="w-7 h-7 text-white dark:text-[#1b1b1b]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">Pro</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Pull-Up Bars</p>
+              </div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <svg className="w-7 h-7 text-white dark:text-[#1b1b1b]" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="1"/>
+                    <rect x="14" y="4" width="4" height="16" rx="1"/>
+                  </svg>
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">Heavy</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Long Bags</p>
+              </div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <div className="text-center p-6 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#1b1b1b] dark:bg-white flex items-center justify-center mb-4">
+                  <Award className="w-7 h-7 text-white dark:text-[#1b1b1b]" />
+                </div>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white mb-1">More</p>
+                <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Equipment</p>
+              </div>
+            </StaggerItem>
+          </StaggerChildren>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-20 bg-[#f9f9f9] dark:bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-6">
           <FadeIn className="text-center mb-16">
             <span className="text-sm font-medium text-[#777777] uppercase tracking-wider mb-4 block">
