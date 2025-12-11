@@ -268,6 +268,7 @@ export async function POST(request: NextRequest) {
                   : membershipType === 'adult'
                   ? 'Brazilian Jiu-Jitsu for adults - Tue & Wed 6:30-8:00 PM + Morning Rolls'
                   : 'Single class visit',
+              images: [`${baseUrl}/jiu-jitsu.png`],
             },
             ...(priceConfig.mode === 'subscription' && {
               recurring: { interval: 'month' },
