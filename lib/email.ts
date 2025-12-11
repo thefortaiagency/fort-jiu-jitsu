@@ -41,7 +41,15 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
   const recipientEmail = data.isMinor && data.parentEmail ? data.parentEmail : data.email;
   const recipientName = data.isMinor && data.parentFirstName ? data.parentFirstName : data.firstName;
 
-  const emailHtml = \`
+  const welcomeMessage = data.isMinor
+    ? `Thank you for enrolling <strong style="color: #1b1b1b;">${data.firstName}</strong> at The Fort Jiu-Jitsu! We're excited to have your family join our community.`
+    : `Thank you for joining <strong style="color: #1b1b1b;">The Fort Jiu-Jitsu</strong>! We're thrilled to have you as part of our community.`;
+
+  const welcomeMessagePlain = data.isMinor
+    ? `Thank you for enrolling ${data.firstName} at The Fort Jiu-Jitsu! We're excited to have your family join our community.`
+    : "Thank you for joining The Fort Jiu-Jitsu! We're thrilled to have you as part of our community.";
+
+  const emailHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -73,13 +81,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
 
                   <!-- Welcome Message -->
                   <p style="color: #1b1b1b; font-size: 20px; line-height: 1.5; margin: 0 0 10px 0;">
-                    Hi \${recipientName},
+                    Hi ${recipientName},
                   </p>
                   <p style="color: #5e5e5e; font-size: 16px; line-height: 1.7; margin: 0 0 30px 0;">
-                    \${data.isMinor
-                      ? \`Thank you for enrolling <strong style="color: #1b1b1b;">\${data.firstName}</strong> at The Fort Jiu-Jitsu! We're excited to have your family join our community.\`
-                      : \`Thank you for joining <strong style="color: #1b1b1b;">The Fort Jiu-Jitsu</strong>! We're thrilled to have you as part of our community.\`
-                    }
+                    ${welcomeMessage}
                   </p>
 
                   <!-- Membership Card -->
@@ -91,7 +96,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                             <td style="padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
                               <span style="color: #777777; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Membership</span>
                               <p style="color: #1b1b1b; font-size: 24px; font-weight: 700; margin: 5px 0 0 0;">
-                                \${membershipLabels[data.membershipType]}
+                                ${membershipLabels[data.membershipType]}
                               </p>
                             </td>
                           </tr>
@@ -99,7 +104,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                             <td style="padding-top: 15px;">
                               <span style="color: #777777; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Schedule</span>
                               <p style="color: #1b1b1b; font-size: 16px; font-weight: 500; margin: 5px 0 0 0;">
-                                \${scheduleInfo[data.membershipType]}
+                                ${scheduleInfo[data.membershipType]}
                               </p>
                             </td>
                           </tr>
@@ -118,7 +123,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                         <table role="presentation" style="width: 100%; border-collapse: collapse;">
                           <tr>
                             <td style="width: 30px; vertical-align: top;">
-                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">✓</span>
+                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</span>
                             </td>
                             <td style="color: #5e5e5e; font-size: 15px; padding-left: 10px;">
                               <strong style="color: #1b1b1b;">Gi (uniform)</strong> - If you don't have one yet, we can help you get fitted
@@ -132,7 +137,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                         <table role="presentation" style="width: 100%; border-collapse: collapse;">
                           <tr>
                             <td style="width: 30px; vertical-align: top;">
-                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">✓</span>
+                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</span>
                             </td>
                             <td style="color: #5e5e5e; font-size: 15px; padding-left: 10px;">
                               <strong style="color: #1b1b1b;">Water bottle</strong> - Stay hydrated during training
@@ -146,7 +151,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                         <table role="presentation" style="width: 100%; border-collapse: collapse;">
                           <tr>
                             <td style="width: 30px; vertical-align: top;">
-                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">✓</span>
+                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</span>
                             </td>
                             <td style="color: #5e5e5e; font-size: 15px; padding-left: 10px;">
                               <strong style="color: #1b1b1b;">Positive attitude</strong> - Come ready to learn and have fun!
@@ -160,10 +165,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                         <table role="presentation" style="width: 100%; border-collapse: collapse;">
                           <tr>
                             <td style="width: 30px; vertical-align: top;">
-                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">✓</span>
+                              <span style="display: inline-block; width: 24px; height: 24px; background: #1b1b1b; border-radius: 50%; color: white; text-align: center; line-height: 24px; font-size: 14px;">&#10003;</span>
                             </td>
                             <td style="color: #5e5e5e; font-size: 15px; padding-left: 10px;">
-                              <strong style="color: #1b1b1b;">Clean fingernails & toenails</strong> - Trimmed for safety
+                              <strong style="color: #1b1b1b;">Clean fingernails &amp; toenails</strong> - Trimmed for safety
                             </td>
                           </tr>
                         </table>
@@ -177,7 +182,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                       <td align="center">
                         <a href="https://thefortjiujitsu.com/member"
                            style="display: inline-block; background: #1b1b1b; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-weight: 600; font-size: 16px;">
-                          Access Member Portal →
+                          Access Member Portal &#8594;
                         </a>
                       </td>
                     </tr>
@@ -217,7 +222,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                     Questions? Call us at <a href="tel:2604527615" style="color: #ffffff; text-decoration: none; font-weight: 600;">(260) 452-7615</a>
                   </p>
                   <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin: 0;">
-                    The Fort Jiu-Jitsu • <a href="https://thefortjiujitsu.com" style="color: rgba(255,255,255,0.6); text-decoration: none;">thefortjiujitsu.com</a>
+                    The Fort Jiu-Jitsu &bull; <a href="https://thefortjiujitsu.com" style="color: rgba(255,255,255,0.6); text-decoration: none;">thefortjiujitsu.com</a>
                   </p>
                 </td>
               </tr>
@@ -228,29 +233,26 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
       </table>
     </body>
     </html>
-  \`;
+  `;
 
-  const plainText = \`
+  const plainText = `
 Welcome to The Fort Jiu-Jitsu!
 
-Hi \${recipientName},
+Hi ${recipientName},
 
-\${data.isMinor
-  ? \`Thank you for enrolling \${data.firstName} at The Fort Jiu-Jitsu! We're excited to have your family join our community.\`
-  : "Thank you for joining The Fort Jiu-Jitsu! We're thrilled to have you as part of our community."
-}
+${welcomeMessagePlain}
 
 YOUR MEMBERSHIP
 ---------------
-\${membershipLabels[data.membershipType]}
-Schedule: \${scheduleInfo[data.membershipType]}
+${membershipLabels[data.membershipType]}
+Schedule: ${scheduleInfo[data.membershipType]}
 
 WHAT TO BRING TO YOUR FIRST CLASS
 ---------------------------------
-• Gi (uniform) - If you don't have one yet, we can help you get fitted
-• Water bottle - Stay hydrated during training
-• Positive attitude - Come ready to learn and have fun!
-• Clean fingernails & toenails - Trimmed for safety
+- Gi (uniform) - If you don't have one yet, we can help you get fitted
+- Water bottle - Stay hydrated during training
+- Positive attitude - Come ready to learn and have fun!
+- Clean fingernails & toenails - Trimmed for safety
 
 TRAINING LOCATION
 -----------------
@@ -268,20 +270,20 @@ Questions? Call us at (260) 452-7615
 
 The Fort Jiu-Jitsu
 thefortjiujitsu.com
-\`;
+`;
 
   try {
     const result = await resend.emails.send({
-      from: \`The Fort Jiu-Jitsu <\${(process.env.RESEND_FROM_EMAIL || 'noreply@thefortaiagency.ai').trim()}>\`,
+      from: `The Fort Jiu-Jitsu <${(process.env.RESEND_FROM_EMAIL || 'noreply@thefortaiagency.ai').trim()}>`,
       to: recipientEmail.trim(),
-      subject: \`Welcome to The Fort Jiu-Jitsu, \${data.firstName}! 🥋\`,
+      subject: `Welcome to The Fort Jiu-Jitsu, ${data.firstName}!`,
       html: emailHtml,
       text: plainText,
     });
 
     if (result.error) {
       console.error('❌ Failed to send welcome email:', result.error);
-      throw new Error(\`Email failed: \${result.error.message}\`);
+      throw new Error(`Email failed: ${result.error.message}`);
     }
 
     console.log('✅ Welcome email sent successfully! ID:', result.data?.id);
@@ -489,7 +491,7 @@ export async function sendContactNotification(data: ContactFormData) {
             <em>"It is not about the destination, it is about the journey."</em>
           </p>
           <p style="color: #777777; font-size: 13px; margin: 0;">
-            The Fort Jiu-Jitsu • <a href="https://thefortjiujitsu.com" style="color: #1b1b1b; text-decoration: none;">thefortjiujitsu.com</a>
+            The Fort Jiu-Jitsu &bull; <a href="https://thefortjiujitsu.com" style="color: #1b1b1b; text-decoration: none;">thefortjiujitsu.com</a>
           </p>
         </div>
       </div>
