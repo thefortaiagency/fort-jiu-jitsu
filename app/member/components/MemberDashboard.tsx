@@ -10,7 +10,6 @@ import {
   FileCheck,
   AlertCircle,
   CheckCircle,
-  XCircle,
   LogOut,
   UserPlus,
   Clock,
@@ -21,7 +20,6 @@ import {
   X,
   Phone,
   Mail,
-  MapPin,
   Heart,
   Star,
   Ban,
@@ -200,7 +198,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       if (res.ok) {
         setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
         setIsEditing(false);
-        loadMemberData(); // Reload data
+        loadMemberData();
       } else {
         const data = await res.json();
         setSaveMessage({ type: 'error', text: data.error || 'Failed to update profile' });
@@ -234,7 +232,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
         });
         setShowCancelModal(false);
         setCancelReason('');
-        loadMemberData(); // Reload to show updated status
+        loadMemberData();
       } else {
         const data = await res.json();
         setSaveMessage({ type: 'error', text: data.error || 'Failed to cancel membership' });
@@ -255,9 +253,9 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-gray-800 border-t-white rounded-full mx-auto mb-4"
+            className="w-12 h-12 border-4 border-[#e2e2e2] dark:border-[#303030] border-t-[#1b1b1b] dark:border-t-white rounded-full mx-auto mb-4"
           />
-          <p className="text-gray-400">Loading your dashboard...</p>
+          <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -266,17 +264,17 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   if (error || !member) {
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-gray-900 rounded-2xl p-8 border border-red-900/50">
+        <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-red-200 dark:border-red-900/50">
           <div className="flex items-center gap-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-red-400" />
-            <h2 className="text-xl font-bold">Error</h2>
+            <AlertCircle className="w-6 h-6 text-red-500" />
+            <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Error</h2>
           </div>
-          <p className="text-gray-400 mb-6">
+          <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-6">
             {error || 'Member not found. Please check your email and try again.'}
           </p>
           <button
             onClick={onLogout}
-            className="w-full bg-white text-black px-6 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            className="w-full bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-6 py-3 rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors"
           >
             Try Again
           </button>
@@ -302,23 +300,32 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-400';
-      case 'pending': return 'text-yellow-400';
+      case 'active': return 'text-green-600 dark:text-green-400';
+      case 'pending': return 'text-yellow-600 dark:text-yellow-400';
       case 'inactive':
-      case 'cancelled': return 'text-red-400';
-      default: return 'text-gray-400';
+      case 'cancelled': return 'text-red-600 dark:text-red-400';
+      default: return 'text-[#5e5e5e] dark:text-[#b9b9b9]';
+    }
+  };
+
+  const getStatusBg = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 dark:bg-green-900/30';
+      case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/30';
+      case 'inactive':
+      case 'cancelled': return 'bg-red-100 dark:bg-red-900/30';
+      default: return 'bg-[#f9f9f9] dark:bg-[#303030]';
     }
   };
 
   const validWaiver = waivers.find((w) => w.isValid);
 
-  // Render belt display
   const renderBeltDisplay = () => {
     if (!member.belt) {
       return (
         <div className="text-center py-4">
-          <p className="text-gray-500">No belt assigned yet</p>
-          <p className="text-sm text-gray-600 mt-1">Contact your instructor to update your belt rank</p>
+          <p className="text-[#777777]">No belt assigned yet</p>
+          <p className="text-sm text-[#999999] mt-1">Contact your instructor to update your belt rank</p>
         </div>
       );
     }
@@ -329,7 +336,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       stripes.push(
         <div
           key={i}
-          className="w-3 h-6 bg-white border border-gray-300 rounded-sm"
+          className="w-3 h-6 bg-white border border-[#e2e2e2] rounded-sm"
         />
       );
     }
@@ -337,14 +344,14 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     return (
       <div className="flex items-center gap-6">
         <div
-          className="w-24 h-8 rounded-sm border-2 border-gray-700 flex items-center justify-end gap-1 px-1"
+          className="w-24 h-8 rounded-sm border-2 border-[#303030] flex items-center justify-end gap-1 px-1"
           style={{ backgroundColor: belt.colorHex }}
         >
           {stripes}
         </div>
         <div>
-          <p className="text-xl font-bold">{belt.displayName}</p>
-          <p className="text-sm text-gray-400">
+          <p className="text-xl font-bold text-[#1b1b1b] dark:text-white">{belt.displayName}</p>
+          <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
             {belt.stripes > 0 ? `${belt.stripes} stripe${belt.stripes > 1 ? 's' : ''}` : 'No stripes yet'}
             {belt.updatedAt && (
               <span className="ml-2">- Promoted {formatDate(belt.updatedAt)}</span>
@@ -363,20 +370,20 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#1b1b1b] dark:text-white mb-2">
             Welcome back, {member.firstName}
           </h1>
-          <p className="text-gray-400">
+          <p className="text-[#5e5e5e] dark:text-[#b9b9b9]">
             Member since {formatDate(member.createdAt)}
           </p>
         </div>
         <button
           onClick={onLogout}
-          className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[#5e5e5e] dark:text-[#b9b9b9] hover:text-[#1b1b1b] dark:hover:text-white transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span className="hidden sm:inline">Logout</span>
@@ -390,10 +397,10 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`p-4 rounded-lg ${
+            className={`p-4 rounded-2xl ${
               saveMessage.type === 'success'
-                ? 'bg-green-900/50 border border-green-500 text-green-200'
-                : 'bg-red-900/50 border border-red-500 text-red-200'
+                ? 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+                : 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
             }`}
           >
             {saveMessage.text}
@@ -402,15 +409,15 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-800 pb-2 overflow-x-auto">
+      <div className="flex gap-2 border-b border-[#e2e2e2] dark:border-[#303030] pb-2 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-white text-black'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                ? 'bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b]'
+                : 'text-[#5e5e5e] dark:text-[#b9b9b9] hover:text-[#1b1b1b] dark:hover:text-white hover:bg-[#f9f9f9] dark:hover:bg-[#1b1b1b]'
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -431,42 +438,50 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
           >
             {/* Status Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl p-6 border border-[#e2e2e2] dark:border-[#303030]">
                 <div className="flex items-center gap-3 mb-3">
-                  <CheckCircle className={`w-5 h-5 ${getStatusColor(member.status)}`} />
-                  <h3 className="text-sm font-medium text-gray-400">Status</h3>
+                  <div className={`w-8 h-8 rounded-lg ${getStatusBg(member.status)} flex items-center justify-center`}>
+                    <CheckCircle className={`w-4 h-4 ${getStatusColor(member.status)}`} />
+                  </div>
+                  <h3 className="text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9]">Status</h3>
                 </div>
                 <p className={`text-2xl font-bold capitalize ${getStatusColor(member.status)}`}>
                   {member.status}
                 </p>
               </div>
 
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl p-6 border border-[#e2e2e2] dark:border-[#303030]">
                 <div className="flex items-center gap-3 mb-3">
-                  <TrendingUp className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-sm font-medium text-gray-400">This Month</h3>
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9]">This Month</h3>
                 </div>
-                <p className="text-2xl font-bold text-white">
-                  {thisMonthCheckIns} <span className="text-sm text-gray-500">classes</span>
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white">
+                  {thisMonthCheckIns} <span className="text-sm font-normal text-[#777777]">classes</span>
                 </p>
               </div>
 
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl p-6 border border-[#e2e2e2] dark:border-[#303030]">
                 <div className="flex items-center gap-3 mb-3">
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <h3 className="text-sm font-medium text-gray-400">Total Classes</h3>
+                  <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                    <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <h3 className="text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9]">Total Classes</h3>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-[#1b1b1b] dark:text-white">
                   {member.totalClassesAttended}
                 </p>
               </div>
 
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl p-6 border border-[#e2e2e2] dark:border-[#303030]">
                 <div className="flex items-center gap-3 mb-3">
-                  <FileCheck className={`w-5 h-5 ${validWaiver ? 'text-green-400' : 'text-red-400'}`} />
-                  <h3 className="text-sm font-medium text-gray-400">Waiver</h3>
+                  <div className={`w-8 h-8 rounded-lg ${validWaiver ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} flex items-center justify-center`}>
+                    <FileCheck className={`w-4 h-4 ${validWaiver ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
+                  </div>
+                  <h3 className="text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9]">Waiver</h3>
                 </div>
-                <p className={`text-2xl font-bold ${validWaiver ? 'text-green-400' : 'text-red-400'}`}>
+                <p className={`text-2xl font-bold ${validWaiver ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {validWaiver ? 'Valid' : 'Expired'}
                 </p>
                 {!validWaiver && (
@@ -481,88 +496,91 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             </div>
 
             {/* Belt Rank */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center gap-3 mb-6">
-                <Award className="w-6 h-6 text-yellow-400" />
-                <h2 className="text-xl font-bold">Belt Rank</h2>
+                <div className="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Belt Rank</h2>
               </div>
               {renderBeltDisplay()}
             </div>
 
             {/* Membership Info */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <CreditCard className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-bold">Membership</h2>
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Membership</h2>
                 </div>
                 {member.status !== 'pending_cancellation' && member.status !== 'cancelled' && (
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="text-sm text-gray-500 hover:text-red-400 transition-colors"
+                    className="text-sm text-[#777777] hover:text-red-500 transition-colors"
                   >
                     Cancel Membership
                   </button>
                 )}
               </div>
               {member.status === 'pending_cancellation' && (
-                <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-2 text-yellow-400">
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-2xl p-4 mb-6">
+                  <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
                     <AlertCircle className="w-5 h-5" />
                     <p className="font-medium">Cancellation Pending</p>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
                     Your membership will end at the end of your current billing period.
                   </p>
                 </div>
               )}
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Program</p>
-                  <p className="font-medium capitalize">{member.program?.replace('-', ' ') || 'Not set'}</p>
+                  <p className="text-sm text-[#777777] mb-1">Program</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white capitalize">{member.program?.replace('-', ' ') || 'Not set'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Plan</p>
-                  <p className="font-medium capitalize">{member.membershipType}</p>
+                  <p className="text-sm text-[#777777] mb-1">Plan</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white capitalize">{member.membershipType}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Monthly Rate</p>
-                  <p className="font-medium">${subscription?.amount || member.individualMonthlyCost}/{subscription?.interval || 'mo'}</p>
+                  <p className="text-sm text-[#777777] mb-1">Monthly Rate</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white">${subscription?.amount || member.individualMonthlyCost}/{subscription?.interval || 'mo'}</p>
                 </div>
               </div>
 
-              {/* Subscription Billing Info */}
               {subscription && (
-                <div className="mt-6 pt-6 border-t border-gray-800">
+                <div className="mt-6 pt-6 border-t border-[#e2e2e2] dark:border-[#303030]">
                   <div className="grid md:grid-cols-2 gap-6">
                     {subscription.isInTrial && subscription.trialEnd ? (
-                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-blue-400 mb-1">
+                      <div className="bg-blue-100 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-1">
                           <Clock className="w-4 h-4" />
                           <p className="text-sm font-medium">Free Trial Active</p>
                         </div>
-                        <p className="text-white font-medium">
+                        <p className="text-[#1b1b1b] dark:text-white font-medium">
                           Trial ends {formatDate(subscription.trialEnd)}
                         </p>
-                        <p className="text-sm text-gray-400 mt-1">
+                        <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9] mt-1">
                           First charge of ${subscription.amount} on {formatDate(subscription.trialEnd)}
                         </p>
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">Next Billing Date</p>
-                        <p className="font-medium text-white">
+                        <p className="text-sm text-[#777777] mb-1">Next Billing Date</p>
+                        <p className="font-medium text-[#1b1b1b] dark:text-white">
                           {formatDate(subscription.nextBillingDate)}
                         </p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
                           ${subscription.amount} will be charged
                         </p>
                       </div>
                     )}
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Billing Period</p>
-                      <p className="font-medium capitalize">{subscription.interval}ly</p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-[#777777] mb-1">Billing Period</p>
+                      <p className="font-medium text-[#1b1b1b] dark:text-white capitalize">{subscription.interval}ly</p>
+                      <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
                         Current period: {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
                       </p>
                     </div>
@@ -572,31 +590,33 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             </div>
 
             {/* Recent Check-ins Preview */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <Clock className="w-6 h-6 text-blue-400" />
-                  <h2 className="text-xl font-bold">Recent Check-ins</h2>
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Recent Check-ins</h2>
                 </div>
                 <button
                   onClick={() => setActiveTab('checkins')}
-                  className="text-sm text-gray-400 hover:text-white"
+                  className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9] hover:text-[#1b1b1b] dark:hover:text-white"
                 >
                   View All
                 </button>
               </div>
               <div className="space-y-3">
                 {checkIns.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No check-ins yet</p>
+                  <p className="text-[#777777] text-center py-4">No check-ins yet</p>
                 ) : (
                   checkIns.slice(0, 5).map((checkIn) => (
                     <div
                       key={checkIn.id}
-                      className="flex items-center gap-3 p-3 bg-black rounded-lg border border-gray-800"
+                      className="flex items-center gap-3 p-4 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-xl border border-[#e2e2e2] dark:border-[#303030]"
                     >
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <div className="flex-1">
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
                           {formatDate(checkIn.checkInTime)} at {formatTime(checkIn.checkInTime)}
                         </p>
                       </div>
@@ -614,28 +634,30 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+            className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]"
           >
             <div className="flex items-center gap-3 mb-6">
-              <Calendar className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-bold">Check-in History</h2>
-              <span className="text-sm text-gray-500">({checkIns.length} total)</span>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Check-in History</h2>
+              <span className="text-sm text-[#777777]">({checkIns.length} total)</span>
             </div>
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {checkIns.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No check-ins recorded yet</p>
+                <p className="text-[#777777] text-center py-8">No check-ins recorded yet</p>
               ) : (
                 checkIns.map((checkIn, index) => (
                   <div
                     key={checkIn.id}
-                    className="flex items-center gap-4 p-4 bg-black rounded-lg border border-gray-800"
+                    className="flex items-center gap-4 p-4 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-xl border border-[#e2e2e2] dark:border-[#303030]"
                   >
-                    <div className="w-10 h-10 rounded-full bg-green-900/30 flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">Check-in #{checkIns.length - index}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-[#1b1b1b] dark:text-white">Check-in #{checkIns.length - index}</p>
+                      <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">
                         {formatDate(checkIn.checkInTime)} at {formatTime(checkIn.checkInTime)}
                       </p>
                     </div>
@@ -655,16 +677,18 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             className="space-y-6"
           >
             {/* Personal Info */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <User className="w-6 h-6 text-white" />
-                  <h2 className="text-xl font-bold">Personal Information</h2>
+                  <div className="w-10 h-10 rounded-xl bg-[#f9f9f9] dark:bg-[#303030] flex items-center justify-center">
+                    <User className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Personal Information</h2>
                 </div>
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800"
+                    className="flex items-center gap-2 px-4 py-2 border border-[#e2e2e2] dark:border-[#303030] rounded-full hover:bg-[#f9f9f9] dark:hover:bg-[#303030] text-[#1b1b1b] dark:text-white transition-colors"
                   >
                     <Edit className="w-4 h-4" />
                     Edit
@@ -673,14 +697,14 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveProfile}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700"
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
                     >
                       <Save className="w-4 h-4" />
                       Save
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800"
+                      className="flex items-center gap-2 px-4 py-2 border border-[#e2e2e2] dark:border-[#303030] rounded-full hover:bg-[#f9f9f9] dark:hover:bg-[#303030] text-[#1b1b1b] dark:text-white transition-colors"
                     >
                       <X className="w-4 h-4" />
                       Cancel
@@ -691,123 +715,127 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Full Name</p>
-                  <p className="font-medium">{member.firstName} {member.lastName}</p>
+                  <p className="text-sm text-[#777777] mb-1">Full Name</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white">{member.firstName} {member.lastName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Email</p>
-                  <p className="font-medium flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
+                  <p className="text-sm text-[#777777] mb-1">Email</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[#777777]" />
                     {member.email}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Phone</p>
+                  <p className="text-sm text-[#777777] mb-1">Phone</p>
                   {isEditing ? (
                     <input
                       type="tel"
                       value={editData.phone}
                       onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                      className="w-full px-4 py-2 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-[#1b1b1b] dark:text-white"
                     />
                   ) : (
-                    <p className="font-medium flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-500" />
+                    <p className="font-medium text-[#1b1b1b] dark:text-white flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-[#777777]" />
                       {member.phone || 'Not set'}
                     </p>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Member ID</p>
-                  <p className="font-mono text-sm text-gray-400">{member.id.slice(0, 8)}...</p>
+                  <p className="text-sm text-[#777777] mb-1">Member ID</p>
+                  <p className="font-mono text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">{member.id.slice(0, 8)}...</p>
                 </div>
               </div>
             </div>
 
             {/* Emergency Contact */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center gap-3 mb-6">
-                <Heart className="w-6 h-6 text-red-400" />
-                <h2 className="text-xl font-bold">Emergency Contact</h2>
+                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Heart className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Emergency Contact</h2>
               </div>
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Name</p>
+                  <p className="text-sm text-[#777777] mb-1">Name</p>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editData.emergency_contact_name}
                       onChange={(e) => setEditData({ ...editData, emergency_contact_name: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                      className="w-full px-4 py-2 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-[#1b1b1b] dark:text-white"
                     />
                   ) : (
-                    <p className="font-medium">{member.emergencyContact?.name || 'Not set'}</p>
+                    <p className="font-medium text-[#1b1b1b] dark:text-white">{member.emergencyContact?.name || 'Not set'}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Phone</p>
+                  <p className="text-sm text-[#777777] mb-1">Phone</p>
                   {isEditing ? (
                     <input
                       type="tel"
                       value={editData.emergency_contact_phone}
                       onChange={(e) => setEditData({ ...editData, emergency_contact_phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                      className="w-full px-4 py-2 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-[#1b1b1b] dark:text-white"
                     />
                   ) : (
-                    <p className="font-medium">{member.emergencyContact?.phone || 'Not set'}</p>
+                    <p className="font-medium text-[#1b1b1b] dark:text-white">{member.emergencyContact?.phone || 'Not set'}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Relationship</p>
+                  <p className="text-sm text-[#777777] mb-1">Relationship</p>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editData.emergency_contact_relationship}
                       onChange={(e) => setEditData({ ...editData, emergency_contact_relationship: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                      className="w-full px-4 py-2 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-[#1b1b1b] dark:text-white"
                     />
                   ) : (
-                    <p className="font-medium">{member.emergencyContact?.relationship || 'Not set'}</p>
+                    <p className="font-medium text-[#1b1b1b] dark:text-white">{member.emergencyContact?.relationship || 'Not set'}</p>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Medical Info */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
               <div className="flex items-center gap-3 mb-6">
-                <AlertCircle className="w-6 h-6 text-yellow-400" />
-                <h2 className="text-xl font-bold">Medical Information</h2>
+                <div className="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Medical Information</h2>
               </div>
 
               <div>
-                <p className="text-sm text-gray-500 mb-1">Medical Conditions / Allergies</p>
+                <p className="text-sm text-[#777777] mb-1">Medical Conditions / Allergies</p>
                 {isEditing ? (
                   <textarea
                     value={editData.medical_conditions}
                     onChange={(e) => setEditData({ ...editData, medical_conditions: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 bg-black border border-gray-700 rounded-lg"
+                    className="w-full px-4 py-3 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-[#1b1b1b] dark:text-white"
                     placeholder="List any conditions, allergies, or medications..."
                   />
                 ) : (
-                  <p className="font-medium">{member.medicalConditions || 'None listed'}</p>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white">{member.medicalConditions || 'None listed'}</p>
                 )}
               </div>
             </div>
 
             {/* QR Code */}
             {member.qrCode && (
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">📱</span>
-                  <h2 className="text-xl font-bold">Your Check-in Code</h2>
+                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Your Check-in Code</h2>
                 </div>
-                <p className="font-mono text-lg bg-black px-4 py-2 rounded-lg inline-block">
+                <p className="font-mono text-lg bg-[#f9f9f9] dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-white px-4 py-2 rounded-xl inline-block border border-[#e2e2e2] dark:border-[#303030]">
                   {member.qrCode}
                 </p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-[#777777] mt-2">
                   Use this code or scan your keychain tag at the kiosk to check in
                 </p>
               </div>
@@ -821,17 +849,19 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-gray-900 rounded-xl p-6 border border-gray-800"
+            className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Users className="w-6 h-6 text-white" />
-                <h2 className="text-xl font-bold">Family Account</h2>
+                <div className="w-10 h-10 rounded-xl bg-[#f9f9f9] dark:bg-[#303030] flex items-center justify-center">
+                  <Users className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Family Account</h2>
               </div>
               {member.isPrimaryAccountHolder && (
                 <Link
                   href={`/signup?familyAccountId=${member.familyAccountId}`}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Add Member
@@ -842,11 +872,11 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             <div className="space-y-4">
               {familyMembers.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-500">No family members linked to this account</p>
+                  <Users className="w-12 h-12 text-[#999999] mx-auto mb-4" />
+                  <p className="text-[#777777]">No family members linked to this account</p>
                   {member.isPrimaryAccountHolder && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Click "Add Member" to add family members to your account
+                    <p className="text-sm text-[#999999] mt-2">
+                      Click &quot;Add Member&quot; to add family members to your account
                     </p>
                   )}
                 </div>
@@ -854,27 +884,27 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                 familyMembers.map((fm) => (
                   <div
                     key={fm.id}
-                    className="flex items-center gap-4 p-4 bg-black rounded-lg border border-gray-800"
+                    className="flex items-center gap-4 p-4 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-xl border border-[#e2e2e2] dark:border-[#303030]"
                   >
-                    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-400" />
+                    <div className="w-12 h-12 rounded-full bg-[#e2e2e2] dark:bg-[#303030] flex items-center justify-center">
+                      <User className="w-6 h-6 text-[#5e5e5e] dark:text-[#b9b9b9]" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">
+                      <p className="font-medium text-[#1b1b1b] dark:text-white">
                         {fm.firstName} {fm.lastName}
                         {fm.isPrimaryAccountHolder && (
-                          <span className="ml-2 text-xs bg-gray-700 px-2 py-1 rounded">Primary</span>
+                          <span className="ml-2 text-xs bg-[#e2e2e2] dark:bg-[#303030] text-[#5e5e5e] dark:text-[#b9b9b9] px-2 py-1 rounded">Primary</span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-500 capitalize">
+                      <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9] capitalize">
                         {fm.program?.replace('-', ' ')}
                       </p>
                     </div>
                     <span
                       className={`text-sm font-medium px-3 py-1 rounded-full ${
                         fm.status === 'active'
-                          ? 'bg-green-900/30 text-green-400'
-                          : 'bg-gray-800 text-gray-400'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                          : 'bg-[#f9f9f9] dark:bg-[#303030] text-[#5e5e5e] dark:text-[#b9b9b9]'
                       }`}
                     >
                       {fm.status}
@@ -888,18 +918,18 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       </AnimatePresence>
 
       {/* Contact Support */}
-      <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800/50 text-center">
-        <p className="text-gray-400 mb-4">Need help with your account?</p>
+      <div className="bg-[#f9f9f9] dark:bg-[#1b1b1b]/50 rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]/50 text-center">
+        <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-6">Need help with your account?</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="tel:2604527615"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors"
           >
             Call (260) 452-7615
           </a>
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-700 text-white rounded-xl font-medium hover:border-white transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-[#e2e2e2] dark:border-[#303030] text-[#1b1b1b] dark:text-white rounded-full font-medium hover:border-[#1b1b1b] dark:hover:border-white transition-colors"
           >
             Contact Support
           </Link>
@@ -913,35 +943,35 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             onClick={() => !isCancelling && setShowCancelModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-gray-900 rounded-2xl p-6 md:p-8 max-w-md w-full border border-gray-800"
+              className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 max-w-md w-full border border-[#e2e2e2] dark:border-[#303030] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-red-900/30 flex items-center justify-center">
-                  <Ban className="w-6 h-6 text-red-400" />
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Ban className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Cancel Membership</h3>
-                  <p className="text-sm text-gray-400">We&apos;re sorry to see you go</p>
+                  <h3 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Cancel Membership</h3>
+                  <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">We&apos;re sorry to see you go</p>
                 </div>
               </div>
 
-              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 mb-6">
-                <p className="text-sm text-yellow-200">
+              <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-2xl p-4 mb-6">
+                <p className="text-sm text-yellow-700 dark:text-yellow-200">
                   Your membership will remain active until the end of your current billing period.
                   You can continue training until then.
                 </p>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-400">
+                <label className="block text-sm font-medium mb-2 text-[#5e5e5e] dark:text-[#b9b9b9]">
                   Help us improve - why are you leaving? (optional)
                 </label>
                 <textarea
@@ -949,7 +979,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Tell us why you're cancelling..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
+                  className="w-full px-4 py-3 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-[#1b1b1b] dark:text-white"
                 />
               </div>
 
@@ -957,14 +987,14 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                 <button
                   onClick={() => setShowCancelModal(false)}
                   disabled={isCancelling}
-                  className="flex-1 px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 border border-[#e2e2e2] dark:border-[#303030] rounded-full text-[#1b1b1b] dark:text-white hover:bg-[#f9f9f9] dark:hover:bg-[#303030] transition-colors disabled:opacity-50"
                 >
                   Keep Membership
                 </button>
                 <button
                   onClick={handleCancelMembership}
                   disabled={isCancelling}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isCancelling ? (
                     <>
