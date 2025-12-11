@@ -185,12 +185,13 @@ export async function POST(request: NextRequest) {
 
     if (memberError) {
       console.error('Error creating member:', memberError);
+      console.error('Member error details:', JSON.stringify(memberError, null, 2));
       // Clean up Stripe customer if member creation fails (only if we created a new one)
       if (isPrimaryAccountHolder && stripeCustomerId) {
         await stripe.customers.del(stripeCustomerId);
       }
       return NextResponse.json(
-        { error: 'Failed to create member account' },
+        { error: `Failed to create member account: ${memberError.message || memberError.code || 'Unknown error'}` },
         { status: 500 }
       );
     }
