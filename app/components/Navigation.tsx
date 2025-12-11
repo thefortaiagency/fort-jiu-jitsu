@@ -38,13 +38,13 @@ export default function Navigation() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <Link href="/" className="relative z-10">
+        <Link href="/" className="relative z-10 cursor-pointer">
           <Image
             src="/jiu-jitsu.png"
-            alt="The Fort Jiu-Jitsu"
+            alt="The Fort Jiu-Jitsu - Back to Home"
             width={120}
             height={40}
-            className="dark:invert w-[100px] md:w-[120px] h-auto"
+            className="dark:invert w-[100px] md:w-[120px] h-auto hover:opacity-80 transition-opacity"
             priority
           />
         </Link>
