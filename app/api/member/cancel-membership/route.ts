@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Update member status in database
+    // Note: Using 'cancelled' status since database constraint only allows: active, inactive, cancelled
     const { error: updateError } = await supabase
       .from('members')
       .update({
-        status: 'pending_cancellation',
+        status: 'cancelled',
         cancellation_reason: reason || 'Member requested cancellation',
         cancellation_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
