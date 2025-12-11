@@ -40,20 +40,21 @@ export async function POST(request: NextRequest) {
 
     // Update member status in database
     // Note: Using 'cancelled' status since database constraint only allows: active, inactive, cancelled
+    // Only updating fields that exist in the schema
+    const updateData: Record<string, any> = {
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    };
+
     const { error: updateError } = await supabase
       .from('members')
-      .update({
-        status: 'cancelled',
-        cancellation_reason: reason || 'Member requested cancellation',
-        cancellation_requested_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', memberId);
 
     if (updateError) {
       console.error('Error updating member:', updateError);
       return NextResponse.json(
-        { error: 'Failed to process cancellation' },
+        { error: `Failed to process cancellation: ${updateError.message}` },
         { status: 500 }
       );
     }
