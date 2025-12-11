@@ -25,10 +25,33 @@ export default function MemberPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#f9f9f9] via-white to-[#f0f0f0] dark:from-[#0a0a0a] dark:via-[#111111] dark:to-[#1b1b1b]" />
+
+      {/* Faded logo watermark */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[60vw] h-[60vw] max-w-[500px] max-h-[500px] opacity-[0.03] dark:opacity-[0.05]">
+          <img
+            src="/jiu-jitsu.png"
+            alt=""
+            className="w-full h-full object-contain dark:invert"
+          />
+        </div>
+      </div>
+
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
+        style={{
+          backgroundImage: `linear-gradient(#1b1b1b 1px, transparent 1px), linear-gradient(90deg, #1b1b1b 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
       <Navigation />
 
-      <main className="pt-32 pb-24 min-h-screen">
+      <main className="pt-32 pb-24 min-h-screen relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <AnimatePresence mode="wait">
             {!memberEmail ? (

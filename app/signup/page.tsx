@@ -209,17 +209,43 @@ export default function SignupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-white flex flex-col relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#f9f9f9] via-white to-[#f0f0f0] dark:from-[#0a0a0a] dark:via-[#111111] dark:to-[#1b1b1b]" />
+
+      {/* Faded logo watermark */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[60vw] h-[60vw] max-w-[500px] max-h-[500px] opacity-[0.03] dark:opacity-[0.05]">
+          <img
+            src="/jiu-jitsu.png"
+            alt=""
+            className="w-full h-full object-contain dark:invert"
+          />
+        </div>
+      </div>
+
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
+        style={{
+          backgroundImage: `linear-gradient(#1b1b1b 1px, transparent 1px), linear-gradient(90deg, #1b1b1b 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
       <Navigation />
 
-      <main className="flex-1 pt-32 pb-20">
+      <main className="flex-1 pt-32 pb-20 relative z-10">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-[#1b1b1b]/80 backdrop-blur-sm border border-[#e2e2e2] dark:border-[#303030] text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] mb-6">
+              Start Your Journey
+            </span>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#1b1b1b] dark:text-white mb-4">
               Join The Fort Jiu-Jitsu
             </h1>
-            <p className="text-gray-400 text-lg">
+            <p className="text-[#5e5e5e] dark:text-[#b9b9b9] text-lg">
               Start your Brazilian Jiu-Jitsu journey today
             </p>
           </div>
