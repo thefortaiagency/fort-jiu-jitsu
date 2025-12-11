@@ -51,11 +51,34 @@ const scheduleData = [
 
 export default function SchedulePage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#f9f9f9] via-white to-[#f0f0f0] dark:from-[#0a0a0a] dark:via-[#111111] dark:to-[#1b1b1b]" />
+
+      {/* Faded logo watermark */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="relative w-[60vw] h-[60vw] max-w-[500px] max-h-[500px] opacity-[0.03] dark:opacity-[0.05]">
+          <img
+            src="/jiu-jitsu.png"
+            alt=""
+            className="w-full h-full object-contain dark:invert"
+          />
+        </div>
+      </div>
+
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
+        style={{
+          backgroundImage: `linear-gradient(#1b1b1b 1px, transparent 1px), linear-gradient(90deg, #1b1b1b 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-[#f9f9f9] to-white dark:from-[#0a0a0a] dark:to-[#1b1b1b]">
+      <section className="pt-32 pb-20 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -77,7 +100,7 @@ export default function SchedulePage() {
       </section>
 
       {/* Pricing Cards */}
-      <section className="py-20 bg-white dark:bg-[#1b1b1b]">
+      <section className="py-20 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <FadeIn className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1b1b1b] dark:text-white mb-4">
@@ -209,7 +232,7 @@ export default function SchedulePage() {
       </section>
 
       {/* Weekly Schedule */}
-      <section className="py-20 bg-[#f9f9f9] dark:bg-[#0a0a0a]">
+      <section className="py-20 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <FadeIn className="text-center mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1b1b1b] dark:text-white mb-4">
@@ -278,7 +301,7 @@ export default function SchedulePage() {
       </section>
 
       {/* Location */}
-      <section className="py-20 bg-white dark:bg-[#1b1b1b]">
+      <section className="py-20 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-2xl mx-auto text-center">
             <FadeIn>
@@ -305,7 +328,7 @@ export default function SchedulePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-[#1b1b1b] dark:bg-[#0a0a0a]">
+      <section className="py-20 bg-[#1b1b1b] dark:bg-[#0a0a0a] relative z-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <FadeIn>
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-6">
