@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       .from('waivers')
       .insert({
         member_id: memberId,
-        waiver_type: 'standard',
+        waiver_type: 'liability',
+        waiver_version: '1.0',
         signer_name: signerName,
         signer_relationship: 'self',
         signature_data: signatureData,

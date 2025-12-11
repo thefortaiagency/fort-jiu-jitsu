@@ -13,7 +13,11 @@ import {
   Keyboard,
   Sparkles,
   Shield,
+  DollarSign,
+  CreditCard,
+  FileSignature,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Html5Qrcode } from 'html5-qrcode';
 import Image from 'next/image';
 
@@ -39,7 +43,9 @@ export default function CheckInKiosk() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual'>('dropdown');
+  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual' | 'dropin' | 'trial'>('dropdown');
+  const [dropInForm, setDropInForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [isProcessingDropIn, setIsProcessingDropIn] = useState(false);
   const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -273,10 +279,46 @@ export default function CheckInKiosk() {
     return User;
   };
 
+  const handleDropInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dropInForm.firstName || !dropInForm.lastName || !dropInForm.email) return;
+
+    setIsProcessingDropIn(true);
+    try {
+      const res = await fetch('/api/drop-in/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dropInForm),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setCheckInResult({
+          success: false,
+          message: data.error || 'Failed to process drop-in. Please try again.',
+        });
+        setTimeout(() => setCheckInResult(null), 4000);
+      }
+    } catch (error) {
+      setCheckInResult({
+        success: false,
+        message: 'Network error. Please try again.',
+      });
+      setTimeout(() => setCheckInResult(null), 4000);
+    } finally {
+      setIsProcessingDropIn(false);
+    }
+  };
+
   const modeButtons = [
     { id: 'dropdown' as const, label: 'Find Name', icon: Users, desc: 'Search members' },
     { id: 'scan' as const, label: 'Scan Code', icon: Camera, desc: 'Use camera' },
     { id: 'manual' as const, label: 'Type Code', icon: Keyboard, desc: 'Enter manually' },
+    { id: 'dropin' as const, label: 'Drop-in', icon: DollarSign, desc: '$20 visitor' },
+    { id: 'trial' as const, label: 'First Time', icon: FileSignature, desc: 'Sign waiver' },
   ];
 
   return (
@@ -371,7 +413,7 @@ export default function CheckInKiosk() {
         </AnimatePresence>
 
         {/* Mode Selection Cards */}
-        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8">
+        <div className="grid grid-cols-5 gap-2 md:gap-4 mb-8">
           {modeButtons.map((btn) => (
             <motion.button
               key={btn.id}
@@ -506,6 +548,168 @@ export default function CheckInKiosk() {
                   </motion.button>
                 </div>
               </form>
+            </motion.div>
+          )}
+
+          {/* Drop-in Mode */}
+          {mode === 'dropin' && (
+            <motion.div
+              key="dropin"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              <form onSubmit={handleDropInSubmit}>
+                <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 border border-green-700/50 rounded-3xl p-6 md:p-10">
+                  <div className="text-center mb-8">
+                    <div className="w-20 h-20 md:w-24 md:h-24 bg-green-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <DollarSign className="w-10 h-10 md:w-12 md:h-12 text-green-400" />
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Drop-in Visitor</h2>
+                    <p className="text-lg text-green-300/80">$20 single class - Try a class today!</p>
+                  </div>
+
+                  <div className="space-y-4 max-w-md mx-auto">
+                    <div className="grid grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        value={dropInForm.firstName}
+                        onChange={(e) => setDropInForm({ ...dropInForm, firstName: e.target.value })}
+                        placeholder="First Name *"
+                        required
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-4 text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                      />
+                      <input
+                        type="text"
+                        value={dropInForm.lastName}
+                        onChange={(e) => setDropInForm({ ...dropInForm, lastName: e.target.value })}
+                        placeholder="Last Name *"
+                        required
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-4 text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                      />
+                    </div>
+                    <input
+                      type="email"
+                      value={dropInForm.email}
+                      onChange={(e) => setDropInForm({ ...dropInForm, email: e.target.value })}
+                      placeholder="Email Address *"
+                      required
+                      className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-4 text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    />
+                    <input
+                      type="tel"
+                      value={dropInForm.phone}
+                      onChange={(e) => setDropInForm({ ...dropInForm, phone: e.target.value })}
+                      placeholder="Phone (optional)"
+                      className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-4 text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    />
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={isProcessingDropIn || !dropInForm.firstName || !dropInForm.lastName || !dropInForm.email}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-8 w-full max-w-md mx-auto block bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-5 rounded-2xl text-xl hover:from-green-500 hover:to-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+                  >
+                    {isProcessingDropIn ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full"
+                        />
+                        Processing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-3">
+                        <CreditCard className="w-6 h-6" />
+                        Pay $20 &amp; Check In
+                      </span>
+                    )}
+                  </motion.button>
+
+                  <p className="text-center text-gray-500 text-sm mt-4">
+                    Secure payment powered by Stripe
+                  </p>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* First Time / Trial Mode */}
+          {mode === 'trial' && (
+            <motion.div
+              key="trial"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              <div className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 border border-blue-700/50 rounded-3xl p-6 md:p-10">
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileSignature className="w-10 h-10 md:w-12 md:h-12 text-blue-400" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">First Time Visitor?</h2>
+                  <p className="text-lg text-blue-300/80">Sign our waiver and start your trial!</p>
+                </div>
+
+                <div className="space-y-4 max-w-lg mx-auto">
+                  {/* Option 1: Free Trial Sign Up */}
+                  <Link
+                    href="/signup"
+                    className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-5 rounded-2xl text-xl text-center hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl"
+                  >
+                    <span className="flex items-center justify-center gap-3">
+                      <Shield className="w-6 h-6" />
+                      Start 7-Day Free Trial
+                    </span>
+                  </Link>
+                  <p className="text-center text-gray-400 text-sm">
+                    Sign up for a membership with 7 days free - includes waiver signing
+                  </p>
+
+                  <div className="flex items-center gap-4 my-6">
+                    <div className="flex-1 h-px bg-gray-700"></div>
+                    <span className="text-gray-500 text-sm">or</span>
+                    <div className="flex-1 h-px bg-gray-700"></div>
+                  </div>
+
+                  {/* Option 2: Drop-in with Waiver */}
+                  <button
+                    type="button"
+                    onClick={() => setMode('dropin')}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-5 rounded-2xl text-xl hover:from-green-500 hover:to-green-600 transition-all shadow-xl"
+                  >
+                    <span className="flex items-center justify-center gap-3">
+                      <DollarSign className="w-6 h-6" />
+                      Pay $20 Drop-in
+                    </span>
+                  </button>
+                  <p className="text-center text-gray-400 text-sm">
+                    Just want to try one class? Pay $20 and train today
+                  </p>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-blue-800/50">
+                  <h3 className="text-lg font-bold text-white text-center mb-4">What to expect:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div className="bg-blue-900/20 rounded-xl p-4">
+                      <div className="text-3xl mb-2">1</div>
+                      <p className="text-sm text-gray-300">Sign the waiver</p>
+                    </div>
+                    <div className="bg-blue-900/20 rounded-xl p-4">
+                      <div className="text-3xl mb-2">2</div>
+                      <p className="text-sm text-gray-300">Choose your plan</p>
+                    </div>
+                    <div className="bg-blue-900/20 rounded-xl p-4">
+                      <div className="text-3xl mb-2">3</div>
+                      <p className="text-sm text-gray-300">Start training!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
 
