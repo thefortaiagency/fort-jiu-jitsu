@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { sendWelcomeEmail } from '@/lib/email';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -44,10 +45,11 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const memberId = session.metadata?.member_id;
+        const membershipType = session.metadata?.membership_type as 'kids' | 'adult' | 'drop-in' | undefined;
 
         if (memberId) {
           // Update member status to active
-          await supabase
+          const { data: updatedMember } = await supabase
             .from('members')
             .update({
               status: 'active',
@@ -55,9 +57,46 @@ export async function POST(request: NextRequest) {
               stripe_subscription_id: session.subscription as string || null,
               last_payment_date: new Date().toISOString(),
             })
-            .eq('id', memberId);
+            .eq('id', memberId)
+            .select('first_name, last_name, email, birth_date, parent_first_name, parent_last_name, parent_email, program')
+            .single();
 
           console.log(`Member ${memberId} activated after successful payment`);
+
+          // Send welcome email
+          if (updatedMember) {
+            try {
+              // Calculate if member is a minor
+              const birthDate = new Date(updatedMember.birth_date);
+              const today = new Date();
+              const age = today.getFullYear() - birthDate.getFullYear();
+              const isMinor = age < 18;
+
+              // Determine membership type from metadata or program
+              let finalMembershipType: 'kids' | 'adult' | 'drop-in' = membershipType || 'adult';
+              if (!membershipType && updatedMember.program) {
+                if (updatedMember.program.includes('kid')) {
+                  finalMembershipType = 'kids';
+                }
+              }
+
+              await sendWelcomeEmail({
+                firstName: updatedMember.first_name,
+                lastName: updatedMember.last_name,
+                email: updatedMember.email,
+                membershipType: finalMembershipType,
+                isMinor,
+                parentFirstName: updatedMember.parent_first_name || undefined,
+                parentLastName: updatedMember.parent_last_name || undefined,
+                parentEmail: updatedMember.parent_email || undefined,
+              });
+
+              console.log(`Welcome email sent to ${updatedMember.email}`);
+            } catch (emailError) {
+              console.error('Failed to send welcome email:', emailError);
+              // Don't fail the webhook if email fails
+            }
+          }
         }
         break;
       }
