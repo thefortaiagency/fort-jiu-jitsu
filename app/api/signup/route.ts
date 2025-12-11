@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
         birth_date: dateOfBirth,
         program: program,
         skill_level: 'beginner',
-        status: 'active',
+        status: 'pending',
         membership_type: membershipType === 'drop-in' ? 'drop-in' : 'monthly',
         parent_first_name: isMinor ? parentFirstName : null,
         parent_last_name: isMinor ? parentLastName : null,

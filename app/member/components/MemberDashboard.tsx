@@ -23,6 +23,8 @@ import {
   Heart,
   Star,
   Ban,
+  RefreshCw,
+  DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -128,6 +130,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     loadMemberData();
@@ -244,6 +247,56 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
     }
 
     setTimeout(() => setSaveMessage(null), 5000);
+  };
+
+  const handleDropInPayment = async () => {
+    if (!member) return;
+
+    setIsProcessingPayment(true);
+    try {
+      const res = await fetch('/api/member/drop-in-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to create payment session' });
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleResubscribe = async () => {
+    if (!member) return;
+
+    setIsProcessingPayment(true);
+    try {
+      const res = await fetch('/api/member/resubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to create subscription' });
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   if (isLoading) {
@@ -408,6 +461,147 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
         )}
       </AnimatePresence>
 
+      {/* Status-specific banners */}
+      {member.status === 'pending' && (
+        <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-2xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-yellow-200 dark:bg-yellow-800/50 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-yellow-700 dark:text-yellow-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-1">Payment Required</h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+                Your membership signup is pending. Please complete payment to activate your account.
+              </p>
+              <button
+                onClick={handleResubscribe}
+                disabled={isProcessingPayment}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-yellow-600 text-white rounded-full font-medium hover:bg-yellow-700 transition-colors disabled:opacity-50"
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                    />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    Complete Payment
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {member.status === 'cancelled' && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-2xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-red-200 dark:bg-red-800/50 flex items-center justify-center flex-shrink-0">
+              <Ban className="w-6 h-6 text-red-700 dark:text-red-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-800 dark:text-red-200 mb-1">Membership Cancelled</h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                Your membership has been cancelled. You can rejoin anytime or purchase a drop-in class.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleResubscribe}
+                  disabled={isProcessingPayment}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors disabled:opacity-50"
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Rejoin Membership
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleDropInPayment}
+                  disabled={isProcessingPayment}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#e2e2e2] dark:border-[#303030] text-[#1b1b1b] dark:text-white rounded-full font-medium hover:bg-[#f9f9f9] dark:hover:bg-[#1b1b1b] transition-colors disabled:opacity-50"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Buy Drop-in ($20)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {member.status === 'inactive' && (
+        <div className="bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600 rounded-2xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-1">Membership Inactive</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Your membership is currently inactive. Reactivate to continue training.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleResubscribe}
+                  disabled={isProcessingPayment}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reactivate Membership
+                </button>
+                <button
+                  onClick={handleDropInPayment}
+                  disabled={isProcessingPayment}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#e2e2e2] dark:border-[#303030] text-[#1b1b1b] dark:text-white rounded-full font-medium hover:bg-[#f9f9f9] dark:hover:bg-[#1b1b1b] transition-colors disabled:opacity-50"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Buy Drop-in ($20)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drop-in option for active members */}
+      {member.status === 'active' && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-2xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm text-blue-800 dark:text-blue-200">
+                Need extra classes? Purchase a drop-in for a friend or family member.
+              </span>
+            </div>
+            <button
+              onClick={handleDropInPayment}
+              disabled={isProcessingPayment}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <DollarSign className="w-4 h-4" />
+              Buy Drop-in ($20)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 border-b border-[#e2e2e2] dark:border-[#303030] pb-2 overflow-x-auto">
         {tabs.map((tab) => (
@@ -515,7 +709,7 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                   </div>
                   <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Membership</h2>
                 </div>
-                {member.status !== 'pending_cancellation' && member.status !== 'cancelled' && (
+                {member.status === 'active' && (
                   <button
                     onClick={() => setShowCancelModal(true)}
                     className="text-sm text-[#777777] hover:text-red-500 transition-colors"
@@ -532,6 +726,24 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
                   </div>
                   <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
                     Your membership will end at the end of your current billing period.
+                  </p>
+                </div>
+              )}
+              {(member.status === 'cancelled' || member.status === 'inactive') && (
+                <div className="bg-gray-100 dark:bg-gray-800/30 border border-gray-300 dark:border-gray-600 rounded-2xl p-4 mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    No active subscription. Use the options above to rejoin or purchase a drop-in class.
+                  </p>
+                </div>
+              )}
+              {member.status === 'pending' && (
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-2xl p-4 mb-6">
+                  <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="font-medium">Payment Pending</p>
+                  </div>
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
+                    Complete your payment to activate your membership.
                   </p>
                 </div>
               )}
