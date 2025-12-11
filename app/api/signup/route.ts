@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { stripe } from '@/lib/stripe';
 import { createServerSupabaseClient } from '@/lib/supabase';
+
+// Initialize Stripe - let the library use its default API version
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const STRIPE_PRICES: Record<string, { priceInCents: number; mode: 'subscription' | 'payment' }> = {
   kids: { priceInCents: 7500, mode: 'subscription' },
@@ -10,6 +12,15 @@ const STRIPE_PRICES: Record<string, { priceInCents: number; mode: 'subscription'
 };
 
 export async function POST(request: NextRequest) {
+  // Check Stripe configuration at runtime
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('Signup failed: STRIPE_SECRET_KEY not configured');
+    return NextResponse.json(
+      { error: 'Payment system not configured. Please contact support.' },
+      { status: 500 }
+    );
+  }
+
   try {
     const body = await request.json();
     const {
@@ -301,6 +312,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Signup error:', error);
+
+    // Handle Stripe-specific errors
+    if (error instanceof Stripe.errors.StripeError) {
+      console.error('Stripe error type:', error.type);
+      console.error('Stripe error code:', error.code);
+      return NextResponse.json(
+        { error: `Payment error: ${error.message}` },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Signup failed' },
       { status: 500 }
