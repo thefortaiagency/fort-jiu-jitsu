@@ -130,22 +130,22 @@ export default function PromotionModal({
   const selectedBelt = availableBelts.find((b) => b.id === selectedBeltId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-white">
                 Promote Member
               </h2>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-400 mt-1">
                 {member.first_name} {member.last_name}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-500 hover:text-white"
             >
               <svg
                 className="w-6 h-6"
@@ -164,8 +164,8 @@ export default function PromotionModal({
           </div>
 
           {/* Current Belt Display */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">
               Current Belt
             </h3>
             <div className="flex items-center justify-center">
@@ -179,17 +179,17 @@ export default function PromotionModal({
                   showLabel={true}
                 />
               ) : (
-                <p className="text-gray-500">No current belt</p>
+                <p className="text-gray-400">No current belt</p>
               )}
             </div>
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-gray-400">
               {member.total_classes_attended} total classes attended
             </div>
           </div>
 
           {/* Promotion Type Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-300 mb-3">
               Promotion Type
             </label>
             <div className="grid grid-cols-2 gap-4">
@@ -198,14 +198,14 @@ export default function PromotionModal({
                 disabled={!canAddStripe}
                 className={`p-4 border-2 rounded-lg text-left transition-all ${
                   promotionType === 'stripe'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-900/30'
+                    : 'border-gray-700 hover:border-gray-600 bg-gray-800'
                 } ${!canAddStripe ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <div className="font-semibold text-gray-900 mb-1">
+                <div className="font-semibold text-white mb-1">
                   Stripe Promotion
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-400">
                   Add one stripe to current belt
                   {!hasBelt && ' (no belt assigned)'}
                   {hasBelt && !canAddStripe && ' (max stripes reached)'}
@@ -216,14 +216,14 @@ export default function PromotionModal({
                 onClick={() => setPromotionType('belt')}
                 className={`p-4 border-2 rounded-lg text-left transition-all ${
                   promotionType === 'belt'
-                    ? 'border-purple-600 bg-purple-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-purple-500 bg-purple-900/30'
+                    : 'border-gray-700 hover:border-gray-600 bg-gray-800'
                 }`}
               >
-                <div className="font-semibold text-gray-900 mb-1">
+                <div className="font-semibold text-white mb-1">
                   Belt Promotion
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-400">
                   Promote to next belt rank
                 </div>
               </button>
@@ -234,13 +234,13 @@ export default function PromotionModal({
           {promotionType === 'belt' && (
             <div className="mb-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   New Belt
                 </label>
                 <select
                   value={selectedBeltId}
                   onChange={(e) => setSelectedBeltId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-white focus:border-transparent"
                 >
                   <option value="">Select belt...</option>
                   {availableBelts.map((belt) => (
@@ -252,7 +252,7 @@ export default function PromotionModal({
               </div>
 
               {selectedBelt && (
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4">
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
                   <div className="flex items-center justify-center">
                     <BeltDisplay
                       beltName={selectedBelt.name}
@@ -267,13 +267,13 @@ export default function PromotionModal({
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Starting Stripes (optional)
                 </label>
                 <select
                   value={stripes}
                   onChange={(e) => setStripes(parseInt(e.target.value))}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-white focus:border-transparent"
                 >
                   {[0, 1, 2, 3, 4].map((num) => (
                     <option key={num} value={num}>
@@ -287,7 +287,7 @@ export default function PromotionModal({
 
           {/* Notes */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Notes (optional)
             </label>
             <textarea
@@ -295,14 +295,14 @@ export default function PromotionModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes about this promotion..."
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-white focus:border-transparent"
             />
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="mb-6 bg-red-900/50 border border-red-500 rounded-lg p-4">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
@@ -311,11 +311,11 @@ export default function PromotionModal({
             <button
               onClick={handlePromote}
               disabled={loading || (promotionType === 'belt' && !selectedBeltId)}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                  <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
                   Promoting...
                 </span>
               ) : (
@@ -329,7 +329,7 @@ export default function PromotionModal({
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
+              className="px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 disabled:opacity-50 transition-colors"
             >
               Cancel
             </button>

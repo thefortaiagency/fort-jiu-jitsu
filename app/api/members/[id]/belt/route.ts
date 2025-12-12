@@ -115,13 +115,14 @@ export async function POST(
       is_stripe_promotion = false,
     } = body;
 
-    // Validate required fields
-    if (!promoted_by) {
-      return NextResponse.json(
-        { error: 'Promoted by (instructor ID) is required' },
-        { status: 400 }
-      );
-    }
+    // Validate promoted_by - if it's not a valid UUID, set to null
+    // This allows "admin" or other string identifiers to be used
+    const isValidUUID = (str: string) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(str);
+    };
+
+    const promotedByUUID = promoted_by && isValidUUID(promoted_by) ? promoted_by : null;
 
     // Get member's current belt info
     const { data: member, error: memberError } = await supabase
@@ -172,7 +173,7 @@ export async function POST(
           member_id: memberId,
           belt_rank_id: member.current_belt_id,
           stripes: newStripes,
-          promoted_by,
+          promoted_by: promotedByUUID,
           notes: notes || `Stripe promotion to ${newStripes} stripes`,
           classes_attended_at_promotion: member.total_classes_attended || 0,
           days_at_previous_belt: daysAtPreviousBelt,
@@ -262,7 +263,7 @@ export async function POST(
         member_id: memberId,
         belt_rank_id: newBelt.id,
         stripes,
-        promoted_by,
+        promoted_by: promotedByUUID,
         notes,
         classes_attended_at_promotion: member.total_classes_attended || 0,
         days_at_previous_belt: daysAtPreviousBelt,
@@ -308,7 +309,7 @@ export async function POST(
   } catch (error) {
     console.error('Error promoting member:', error);
     return NextResponse.json(
-      { error: 'Failed to promote member' },
+      { error: 'Failed to promote member', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

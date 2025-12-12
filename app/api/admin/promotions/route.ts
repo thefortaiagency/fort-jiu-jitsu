@@ -151,12 +151,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!promoted_by) {
-      return NextResponse.json(
-        { error: 'Promoted by (instructor ID) is required' },
-        { status: 400 }
-      );
-    }
+    // Validate promoted_by - if it's not a valid UUID, set to null
+    const isValidUUID = (str: string) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(str);
+    };
+
+    const promotedByUUID = promoted_by && isValidUUID(promoted_by) ? promoted_by : null;
 
     // Process each promotion
     const results = [];
@@ -208,7 +209,7 @@ export async function POST(request: NextRequest) {
             member_id,
             belt_rank_id: member.current_belt_id,
             stripes: newStripes,
-            promoted_by,
+            promoted_by: promotedByUUID,
             notes: notes || `Stripe promotion to ${newStripes} stripes`,
             classes_attended_at_promotion: member.total_classes_attended || 0,
             days_at_previous_belt: daysAtPreviousBelt,
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
             member_id,
             belt_rank_id: new_belt_id,
             stripes: stripes || 0,
-            promoted_by,
+            promoted_by: promotedByUUID,
             notes,
             classes_attended_at_promotion: member.total_classes_attended || 0,
             days_at_previous_belt: daysAtPreviousBelt,
