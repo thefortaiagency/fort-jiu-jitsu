@@ -56,11 +56,14 @@ function formatMessage(content: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  // Convert plain URLs to clickable links (only for thefortjiujitsu.com or relative paths)
-  // Match thefortjiujitsu.com URLs
+  // Convert plain URLs to clickable links (only for thefortjiujitsu.com)
+  // Match thefortjiujitsu.com URLs with or without paths
   formatted = formatted.replace(
-    /(?<!<a[^>]*href=["']?)(?:https?:\/\/)?(?:www\.)?thefortjiujitsu\.com(\/[^\s<]*)?/gi,
-    '<a href="https://thefortjiujitsu.com$1" class="text-[#b9955a] hover:text-[#d4af6a] underline" target="_blank" rel="noopener noreferrer">thefortjiujitsu.com$1</a>'
+    /(?:https?:\/\/)?(?:www\.)?thefortjiujitsu\.com(\/[^\s<,.)]*)?/gi,
+    (match, path) => {
+      const fullPath = path || '';
+      return `<a href="https://thefortjiujitsu.com${fullPath}" class="text-[#b9955a] hover:text-[#d4af6a] underline" target="_blank" rel="noopener noreferrer">thefortjiujitsu.com${fullPath}</a>`;
+    }
   );
 
   return formatted;
@@ -204,11 +207,11 @@ export default function BJJChatbot() {
               opacity: 1,
               y: 0,
               scale: 1,
-              height: isMinimized ? 'auto' : '550px'
+              height: isMinimized ? 'auto' : undefined
             }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] bg-[#0a0a0a] rounded-3xl shadow-2xl border border-[#b9955a]/30 overflow-hidden flex flex-col"
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] h-[500px] md:h-[650px] bg-[#0a0a0a] rounded-3xl shadow-2xl border border-[#b9955a]/30 overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(185, 149, 90, 0.2)',
             }}
@@ -246,7 +249,7 @@ export default function BJJChatbot() {
             {/* Messages */}
             {!isMinimized && (
               <>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[280px] max-h-[350px]">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
