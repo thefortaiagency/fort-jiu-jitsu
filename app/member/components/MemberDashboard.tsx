@@ -1072,21 +1072,14 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
 
                   <div className="flex-1 text-center md:text-left">
                     <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-4">
-                      Show this QR code at the check-in kiosk or scan it with your phone when you arrive
+                      Show this QR code at the kiosk when you arrive to check in
                     </p>
-                    <div className="mb-4">
+                    <div>
                       <p className="text-sm text-[#777777] mb-1">Your Code</p>
                       <p className="font-mono text-xl bg-[#f9f9f9] dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-white px-4 py-2 rounded-xl inline-block border border-[#e2e2e2] dark:border-[#303030]">
                         {member.qrCode}
                       </p>
                     </div>
-                    <Link
-                      href="/check-in"
-                      className="inline-flex items-center gap-2 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-6 py-3 rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors"
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      Go to Check-in
-                    </Link>
                   </div>
                 </div>
               </div>
