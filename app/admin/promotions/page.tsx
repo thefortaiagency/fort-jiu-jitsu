@@ -5,17 +5,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BeltBadge } from '@/app/components/BeltDisplay';
 import AdminNav from '../components/AdminNav';
+import PromotionModal from '../components/PromotionModal';
 
 interface Member {
   id: string;
   first_name: string;
   last_name: string;
   program: string;
+  total_classes_attended: number;
   current_belt?: {
     id: string;
     name: string;
     display_name: string;
     color_hex: string;
+    is_kids_belt: boolean;
   };
   current_stripes: number;
   eligibility: {
@@ -29,12 +32,13 @@ interface Member {
 export default function PromotionsPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
   const [filterProgram, setFilterProgram] = useState('');
   const [filterBelt, setFilterBelt] = useState('');
   const [showEligibleOnly, setShowEligibleOnly] = useState(false);
+  const [promotingMember, setPromotingMember] = useState<Member | null>(null);
+  const [bulkPromoting, setBulkPromoting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     loadMembers();
@@ -76,6 +80,50 @@ export default function PromotionsPage() {
       setSelectedMembers(new Set());
     } else {
       setSelectedMembers(new Set(filteredMembers.map((m) => m.id)));
+    }
+  };
+
+  const handlePromoteSuccess = () => {
+    setSuccessMessage('Promotion successful!');
+    loadMembers();
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handleBulkStripePromotion = async () => {
+    if (selectedMembers.size === 0) return;
+
+    setBulkPromoting(true);
+    try {
+      const promotions = Array.from(selectedMembers).map(memberId => ({
+        member_id: memberId,
+        is_stripe_promotion: true,
+      }));
+
+      const res = await fetch('/api/admin/promotions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          promotions,
+          promoted_by: 'admin', // In production, use actual admin ID
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuccessMessage(`Successfully promoted ${data.promoted} member(s)!`);
+        setSelectedMembers(new Set());
+        loadMembers();
+      } else {
+        alert('Some promotions failed. Check console for details.');
+        console.error('Bulk promotion errors:', data.errors);
+      }
+    } catch (error) {
+      console.error('Bulk promotion error:', error);
+      alert('Failed to process bulk promotions');
+    } finally {
+      setBulkPromoting(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
 
@@ -189,6 +237,13 @@ export default function PromotionsPage() {
           </div>
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6">
+            <p className="text-green-400 font-medium">{successMessage}</p>
+          </div>
+        )}
+
         {/* Bulk Actions */}
         {selectedMembers.size > 0 && (
           <div className="bg-gray-900 border border-green-500/50 rounded-lg p-4 mb-6">
@@ -197,11 +252,12 @@ export default function PromotionsPage() {
                 {selectedMembers.size} member(s) selected
               </span>
               <div className="flex gap-2 flex-wrap">
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
-                  Promote Selected (Stripe)
-                </button>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm transition-colors">
-                  Promote Selected (Belt)
+                <button
+                  onClick={handleBulkStripePromotion}
+                  disabled={bulkPromoting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bulkPromoting ? 'Promoting...' : 'Add Stripe to Selected'}
                 </button>
                 <button
                   onClick={() => setSelectedMembers(new Set())}
@@ -268,9 +324,7 @@ export default function PromotionsPage() {
                       member={member}
                       selected={selectedMembers.has(member.id)}
                       onToggle={() => toggleMember(member.id)}
-                      onPromote={() => {
-                        // Open promotion modal
-                      }}
+                      onPromote={() => setPromotingMember(member)}
                     />
                   ))}
                 </tbody>
@@ -279,6 +333,23 @@ export default function PromotionsPage() {
           </div>
         )}
       </main>
+
+      {/* Promotion Modal */}
+      {promotingMember && (
+        <PromotionModal
+          member={{
+            id: promotingMember.id,
+            first_name: promotingMember.first_name,
+            last_name: promotingMember.last_name,
+            current_belt: promotingMember.current_belt,
+            current_stripes: promotingMember.current_stripes || 0,
+            total_classes_attended: promotingMember.total_classes_attended || 0,
+          }}
+          onClose={() => setPromotingMember(null)}
+          onSuccess={handlePromoteSuccess}
+          promotedBy="admin"
+        />
+      )}
     </div>
   );
 }

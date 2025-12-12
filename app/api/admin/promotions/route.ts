@@ -197,6 +197,13 @@ export async function POST(request: NextRequest) {
           // Stripe promotion
           const newStripes = Math.min(4, (member.current_stripes || 0) + 1);
 
+          // Mark previous history as not current
+          await supabase
+            .from('member_belt_history')
+            .update({ is_current: false })
+            .eq('member_id', member_id)
+            .eq('is_current', true);
+
           await supabase.from('member_belt_history').insert({
             member_id,
             belt_rank_id: member.current_belt_id,
@@ -207,6 +214,16 @@ export async function POST(request: NextRequest) {
             days_at_previous_belt: daysAtPreviousBelt,
             is_current: true,
           });
+
+          // Update member's current stripes
+          await supabase
+            .from('members')
+            .update({
+              current_stripes: newStripes,
+              belt_updated_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', member_id);
 
           results.push({
             member_id,

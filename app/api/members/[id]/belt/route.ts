@@ -158,6 +158,13 @@ export async function POST(
     if (is_stripe_promotion) {
       const newStripes = Math.min(4, (member.current_stripes || 0) + 1);
 
+      // Mark previous history as not current
+      await supabase
+        .from('member_belt_history')
+        .update({ is_current: false })
+        .eq('member_id', memberId)
+        .eq('is_current', true);
+
       // Create history entry for stripe promotion
       const { error: historyError } = await supabase
         .from('member_belt_history')
@@ -174,9 +181,22 @@ export async function POST(
 
       if (historyError) throw historyError;
 
+      // Update member's current stripes
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          current_stripes: newStripes,
+          belt_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', memberId);
+
+      if (updateError) throw updateError;
+
       return NextResponse.json({
         success: true,
         message: `Member promoted to ${newStripes} stripes`,
+        stripes: newStripes,
       });
     }
 
@@ -228,6 +248,13 @@ export async function POST(
       }
     }
 
+    // Mark previous history as not current
+    await supabase
+      .from('member_belt_history')
+      .update({ is_current: false })
+      .eq('member_id', memberId)
+      .eq('is_current', true);
+
     // Create belt promotion history entry
     const { error: historyError } = await supabase
       .from('member_belt_history')
@@ -243,6 +270,19 @@ export async function POST(
       });
 
     if (historyError) throw historyError;
+
+    // Update member's current belt
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({
+        current_belt_id: newBelt.id,
+        current_stripes: stripes,
+        belt_updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', memberId);
+
+    if (updateError) throw updateError;
 
     // Create notification for member
     try {
@@ -263,6 +303,7 @@ export async function POST(
       success: true,
       message: `Member promoted to ${newBelt.display_name}`,
       new_belt: newBelt,
+      stripes,
     });
   } catch (error) {
     console.error('Error promoting member:', error);
