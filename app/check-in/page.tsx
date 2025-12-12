@@ -43,9 +43,22 @@ export default function CheckInKiosk() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual' | 'dropin' | 'trial'>('dropdown');
+  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual' | 'dropin' | 'waiver'>('dropdown');
   const [dropInForm, setDropInForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [isProcessingDropIn, setIsProcessingDropIn] = useState(false);
+  const [waiverForm, setWaiverForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    signerName: '',
+    waiverAgreed: false
+  });
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [isProcessingWaiver, setIsProcessingWaiver] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -313,12 +326,175 @@ export default function CheckInKiosk() {
     }
   };
 
+  // Initialize canvas when waiver mode is active
+  useEffect(() => {
+    if (mode === 'waiver' && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, [mode]);
+
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    if ('touches' in e) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY,
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const { x, y } = getCanvasCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const { x, y } = getCanvasCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (isDrawing && canvasRef.current) {
+      setSignatureData(canvasRef.current.toDataURL('image/png'));
+    }
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setSignatureData(null);
+  };
+
+  const handleWaiverSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!waiverForm.firstName || !waiverForm.lastName || !waiverForm.email) {
+      setCheckInResult({ success: false, message: 'Please fill in all required fields' });
+      setTimeout(() => setCheckInResult(null), 4000);
+      return;
+    }
+
+    if (!waiverForm.waiverAgreed) {
+      setCheckInResult({ success: false, message: 'You must agree to the waiver terms' });
+      setTimeout(() => setCheckInResult(null), 4000);
+      return;
+    }
+
+    if (!signatureData) {
+      setCheckInResult({ success: false, message: 'Please sign the waiver' });
+      setTimeout(() => setCheckInResult(null), 4000);
+      return;
+    }
+
+    if (!waiverForm.signerName.trim()) {
+      setCheckInResult({ success: false, message: 'Please type your full legal name' });
+      setTimeout(() => setCheckInResult(null), 4000);
+      return;
+    }
+
+    setIsProcessingWaiver(true);
+    try {
+      const res = await fetch('/api/waiver-sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...waiverForm,
+          signatureData,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setCheckInResult({
+          success: true,
+          member: {
+            id: data.member.id,
+            first_name: data.member.firstName,
+            last_name: data.member.lastName,
+            email: data.member.email,
+            program: 'trial',
+            status: 'trial',
+          },
+          message: `Welcome, ${data.member.firstName}! Waiver signed successfully.`,
+        });
+        // Reset form
+        setWaiverForm({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          dateOfBirth: '',
+          signerName: '',
+          waiverAgreed: false,
+        });
+        setSignatureData(null);
+        clearSignature();
+        setTodayCount((prev) => prev + 1);
+        setTimeout(() => setCheckInResult(null), 5000);
+      } else {
+        setCheckInResult({
+          success: false,
+          message: data.error || 'Failed to sign waiver. Please try again.',
+        });
+        setTimeout(() => setCheckInResult(null), 4000);
+      }
+    } catch (error) {
+      setCheckInResult({
+        success: false,
+        message: 'Network error. Please try again.',
+      });
+      setTimeout(() => setCheckInResult(null), 4000);
+    } finally {
+      setIsProcessingWaiver(false);
+    }
+  };
+
   const modeButtons = [
     { id: 'dropdown' as const, label: 'Find Name', icon: Users, desc: 'Search members' },
     { id: 'scan' as const, label: 'Scan Code', icon: Camera, desc: 'Use camera' },
     { id: 'manual' as const, label: 'Type Code', icon: Keyboard, desc: 'Enter manually' },
     { id: 'dropin' as const, label: 'Drop-in', icon: DollarSign, desc: '$20 visitor' },
-    { id: 'trial' as const, label: 'First Time', icon: FileSignature, desc: 'Sign waiver' },
+    { id: 'waiver' as const, label: 'Sign Waiver', icon: FileSignature, desc: 'First time' },
   ];
 
   return (
@@ -637,79 +813,199 @@ export default function CheckInKiosk() {
             </motion.div>
           )}
 
-          {/* First Time / Trial Mode */}
-          {mode === 'trial' && (
+          {/* Sign Waiver Mode */}
+          {mode === 'waiver' && (
             <motion.div
-              key="trial"
+              key="waiver"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="mb-8"
             >
-              <div className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 border border-blue-700/50 rounded-3xl p-6 md:p-10">
-                <div className="text-center mb-8">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileSignature className="w-10 h-10 md:w-12 md:h-12 text-blue-400" />
+              <form onSubmit={handleWaiverSubmit}>
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 border border-blue-700/50 rounded-3xl p-6 md:p-8">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <FileSignature className="w-8 h-8 md:w-10 md:h-10 text-blue-400" />
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Sign Waiver & Check In</h2>
+                    <p className="text-blue-300/80">First time? Sign the waiver and you&apos;re ready to train!</p>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">First Time Visitor?</h2>
-                  <p className="text-lg text-blue-300/80">Sign our waiver and start your trial!</p>
-                </div>
 
-                <div className="space-y-4 max-w-lg mx-auto">
-                  {/* Option 1: Free Trial Sign Up */}
-                  <Link
-                    href="/signup"
-                    className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-5 rounded-2xl text-xl text-center hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl"
+                  {/* Personal Info */}
+                  <div className="space-y-4 max-w-lg mx-auto mb-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        value={waiverForm.firstName}
+                        onChange={(e) => setWaiverForm({ ...waiverForm, firstName: e.target.value })}
+                        placeholder="First Name *"
+                        required
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                      <input
+                        type="text"
+                        value={waiverForm.lastName}
+                        onChange={(e) => setWaiverForm({ ...waiverForm, lastName: e.target.value })}
+                        placeholder="Last Name *"
+                        required
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                    <input
+                      type="email"
+                      value={waiverForm.email}
+                      onChange={(e) => setWaiverForm({ ...waiverForm, email: e.target.value })}
+                      placeholder="Email Address *"
+                      required
+                      className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input
+                        type="tel"
+                        value={waiverForm.phone}
+                        onChange={(e) => setWaiverForm({ ...waiverForm, phone: e.target.value })}
+                        placeholder="Phone (optional)"
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                      <input
+                        type="date"
+                        value={waiverForm.dateOfBirth}
+                        onChange={(e) => setWaiverForm({ ...waiverForm, dateOfBirth: e.target.value })}
+                        placeholder="Date of Birth"
+                        className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Waiver Text */}
+                  <div className="max-w-lg mx-auto mb-4">
+                    <h3 className="text-lg font-bold text-white mb-2">Liability Waiver</h3>
+                    <div className="bg-black/50 border border-gray-700 rounded-xl p-4 h-40 overflow-y-auto text-sm text-gray-300">
+                      <p className="mb-3">
+                        <strong>WAIVER AND RELEASE OF LIABILITY</strong> - In consideration of being allowed to participate in Brazilian Jiu-Jitsu classes at The Fort Jiu-Jitsu, I acknowledge and agree:
+                      </p>
+                      <p className="mb-2">
+                        <strong>1. ASSUMPTION OF RISK:</strong> I understand BJJ involves physical contact and inherent risks including injuries. I voluntarily assume all such risks.
+                      </p>
+                      <p className="mb-2">
+                        <strong>2. RELEASE OF LIABILITY:</strong> I release The Fort Jiu-Jitsu from any liability for injuries sustained while training.
+                      </p>
+                      <p className="mb-2">
+                        <strong>3. MEDICAL ACKNOWLEDGMENT:</strong> I certify I am physically fit to participate and will inform instructors of any health conditions.
+                      </p>
+                      <p className="mb-2">
+                        <strong>4. PHOTO/VIDEO RELEASE:</strong> I grant permission for photos/videos taken during training to be used for promotional purposes.
+                      </p>
+                      <p className="font-bold">
+                        I HAVE READ THIS WAIVER AND FULLY UNDERSTAND ITS TERMS. I SIGN IT FREELY AND VOLUNTARILY.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Agreement Checkbox */}
+                  <div className="max-w-lg mx-auto mb-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={waiverForm.waiverAgreed}
+                        onChange={(e) => setWaiverForm({ ...waiverForm, waiverAgreed: e.target.checked })}
+                        className="mt-1 w-5 h-5 rounded border-gray-700 bg-black text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-300">
+                        I have read, understand, and agree to the Waiver and Release of Liability.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Signature Pad */}
+                  <div className="max-w-lg mx-auto mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Your Signature <span className="text-red-500">*</span>
+                    </label>
+                    <div className="border-2 border-gray-700 rounded-xl overflow-hidden bg-white">
+                      <canvas
+                        ref={canvasRef}
+                        width={500}
+                        height={150}
+                        className="w-full touch-none cursor-crosshair"
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        onTouchStart={startDrawing}
+                        onTouchMove={draw}
+                        onTouchEnd={stopDrawing}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-xs text-gray-400">Sign above using your finger or mouse</p>
+                      <button
+                        type="button"
+                        onClick={clearSignature}
+                        className="text-xs text-red-400 hover:text-red-300 underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Typed Name */}
+                  <div className="max-w-lg mx-auto mb-6">
+                    <input
+                      type="text"
+                      value={waiverForm.signerName}
+                      onChange={(e) => setWaiverForm({ ...waiverForm, signerName: e.target.value })}
+                      placeholder="Type your full legal name *"
+                      className="w-full bg-black/50 border-2 border-gray-700 rounded-xl px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    type="submit"
+                    disabled={isProcessingWaiver || !waiverForm.firstName || !waiverForm.lastName || !waiverForm.email || !waiverForm.waiverAgreed || !signatureData || !waiverForm.signerName}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full max-w-lg mx-auto block bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-5 rounded-2xl text-xl hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
                   >
-                    <span className="flex items-center justify-center gap-3">
-                      <Shield className="w-6 h-6" />
-                      Start 7-Day Free Trial
-                    </span>
-                  </Link>
-                  <p className="text-center text-gray-400 text-sm">
-                    Sign up for a membership with 7 days free - includes waiver signing
-                  </p>
+                    {isProcessingWaiver ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full"
+                        />
+                        Processing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-3">
+                        <CheckCircle className="w-6 h-6" />
+                        Sign Waiver & Check In
+                      </span>
+                    )}
+                  </motion.button>
 
-                  <div className="flex items-center gap-4 my-6">
-                    <div className="flex-1 h-px bg-gray-700"></div>
-                    <span className="text-gray-500 text-sm">or</span>
-                    <div className="flex-1 h-px bg-gray-700"></div>
-                  </div>
-
-                  {/* Option 2: Drop-in with Waiver */}
-                  <button
-                    type="button"
-                    onClick={() => setMode('dropin')}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-5 rounded-2xl text-xl hover:from-green-500 hover:to-green-600 transition-all shadow-xl"
-                  >
-                    <span className="flex items-center justify-center gap-3">
-                      <DollarSign className="w-6 h-6" />
-                      Pay $20 Drop-in
-                    </span>
-                  </button>
-                  <p className="text-center text-gray-400 text-sm">
-                    Just want to try one class? Pay $20 and train today
-                  </p>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-blue-800/50">
-                  <h3 className="text-lg font-bold text-white text-center mb-4">What to expect:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    <div className="bg-blue-900/20 rounded-xl p-4">
-                      <div className="text-3xl mb-2">1</div>
-                      <p className="text-sm text-gray-300">Sign the waiver</p>
-                    </div>
-                    <div className="bg-blue-900/20 rounded-xl p-4">
-                      <div className="text-3xl mb-2">2</div>
-                      <p className="text-sm text-gray-300">Choose your plan</p>
-                    </div>
-                    <div className="bg-blue-900/20 rounded-xl p-4">
-                      <div className="text-3xl mb-2">3</div>
-                      <p className="text-sm text-gray-300">Start training!</p>
+                  {/* Alternative Options */}
+                  <div className="max-w-lg mx-auto mt-6 pt-4 border-t border-blue-800/50">
+                    <p className="text-center text-gray-400 text-sm mb-3">Want to become a member?</p>
+                    <div className="flex gap-3">
+                      <Link
+                        href="/signup"
+                        className="flex-1 bg-white/10 border border-white/20 text-white font-medium py-3 rounded-xl text-center hover:bg-white/20 transition-all text-sm"
+                      >
+                        Start Free Trial
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setMode('dropin')}
+                        className="flex-1 bg-green-600/20 border border-green-500/30 text-green-400 font-medium py-3 rounded-xl hover:bg-green-600/30 transition-all text-sm"
+                      >
+                        $20 Drop-in
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </form>
             </motion.div>
           )}
 
