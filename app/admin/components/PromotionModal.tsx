@@ -19,6 +19,7 @@ interface Member {
   current_belt?: BeltRank;
   current_stripes: number;
   total_classes_attended: number;
+  program?: string;
 }
 
 interface PromotionModalProps {
@@ -53,21 +54,29 @@ export default function PromotionModal({
       const res = await fetch('/api/belts');
       const data = await res.json();
 
-      // Determine if member is in kids program
-      const isKids = member.current_belt?.is_kids_belt || false;
+      // Determine if member is in kids program based on belt OR program name
+      const isKids = member.current_belt?.is_kids_belt ||
+                     member.program === 'kids-bjj' ||
+                     member.program === 'kids' ||
+                     false;
       const belts = isKids ? data.kids_belts : data.adult_belts;
 
       setAvailableBelts(belts || []);
 
-      // Pre-select next belt
+      // Pre-select first belt (white) for members without a belt, or next belt for members with a belt
       if (member.current_belt) {
         const nextBeltName = getNextBelt(member.current_belt.name, isKids);
         if (nextBeltName) {
-          const nextBelt = belts.find((b: BeltRank) => b.name === nextBeltName);
+          const nextBelt = belts?.find((b: BeltRank) => b.name === nextBeltName);
           if (nextBelt) {
             setSelectedBeltId(nextBelt.id);
           }
         }
+      } else if (belts && belts.length > 0) {
+        // No current belt - pre-select first belt (white)
+        setSelectedBeltId(belts[0].id);
+        // Also default to belt promotion for members without a belt
+        setPromotionType('belt');
       }
     } catch (error) {
       console.error('Failed to load belts:', error);
@@ -115,7 +124,9 @@ export default function PromotionModal({
     }
   }
 
-  const canAddStripe = (member.current_stripes || 0) < 4;
+  // Can only add stripe if member has a belt and has less than 4 stripes
+  const hasBelt = !!member.current_belt;
+  const canAddStripe = hasBelt && (member.current_stripes || 0) < 4;
   const selectedBelt = availableBelts.find((b) => b.id === selectedBeltId);
 
   return (
@@ -196,7 +207,8 @@ export default function PromotionModal({
                 </div>
                 <div className="text-sm text-gray-600">
                   Add one stripe to current belt
-                  {!canAddStripe && ' (max stripes reached)'}
+                  {!hasBelt && ' (no belt assigned)'}
+                  {hasBelt && !canAddStripe && ' (max stripes reached)'}
                 </div>
               </button>
 

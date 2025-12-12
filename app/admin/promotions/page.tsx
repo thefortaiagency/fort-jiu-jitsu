@@ -344,6 +344,7 @@ export default function PromotionsPage() {
             current_belt: promotingMember.current_belt,
             current_stripes: promotingMember.current_stripes || 0,
             total_classes_attended: promotingMember.total_classes_attended || 0,
+            program: promotingMember.program,
           }}
           onClose={() => setPromotingMember(null)}
           onSuccess={handlePromoteSuccess}
