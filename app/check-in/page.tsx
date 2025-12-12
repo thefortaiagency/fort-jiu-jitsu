@@ -183,14 +183,13 @@ export default function CheckInKiosk() {
       const data = await res.json();
 
       if (res.ok) {
-        setCheckInResult({
-          success: true,
-          member,
-          message: `Welcome, ${member.first_name}!`,
-        });
-        setRecentCheckIns((prev) => [member, ...prev.slice(0, 4)]);
-        setTodayCount((prev) => prev + 1);
-        loadRecentCheckIns();
+        // Get monthly count for the member
+        const monthlyRes = await fetch(`/api/check-in?memberId=${member.id}`);
+        const monthlyData = await monthlyRes.json();
+        const monthlyCount = monthlyData.thisMonthCount || 1;
+
+        // Redirect to success page with member info
+        window.location.href = `/check-in/success?name=${encodeURIComponent(member.first_name)}&count=${monthlyCount}`;
       } else {
         setCheckInResult({
           success: false,
@@ -445,32 +444,8 @@ export default function CheckInKiosk() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setCheckInResult({
-          success: true,
-          member: {
-            id: data.member.id,
-            first_name: data.member.firstName,
-            last_name: data.member.lastName,
-            email: data.member.email,
-            program: 'trial',
-            status: 'trial',
-          },
-          message: `Welcome, ${data.member.firstName}! Waiver signed successfully.`,
-        });
-        // Reset form
-        setWaiverForm({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          dateOfBirth: '',
-          signerName: '',
-          waiverAgreed: false,
-        });
-        setSignatureData(null);
-        clearSignature();
-        setTodayCount((prev) => prev + 1);
-        setTimeout(() => setCheckInResult(null), 5000);
+        // Redirect to success page for first-time waiver signers
+        window.location.href = `/check-in/success?name=${encodeURIComponent(data.member.firstName)}&count=1`;
       } else {
         setCheckInResult({
           success: false,

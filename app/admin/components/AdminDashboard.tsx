@@ -25,11 +25,14 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalMembers: 0,
     activeMembers: 0,
     pendingWaivers: 0,
     checkedInToday: 0,
+    checkInsThisWeek: 0,
+    expiringWaivers: 0,
   });
 
   const fetchMembers = useCallback(async () => {
@@ -46,48 +49,45 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
     setMembers(data || []);
 
-    // Calculate stats
-    const active = data?.filter((m) => m.status === 'active').length || 0;
-
-    // Get today's check-ins
-    const today = new Date().toISOString().split('T')[0];
-    const { count: checkedIn } = await supabase
-      .from('check_ins')
-      .select('*', { count: 'exact', head: true })
-      .gte('checked_in_at', `${today}T00:00:00`)
-      .lt('checked_in_at', `${today}T23:59:59`);
-
-    // Get pending waivers (members without valid waiver)
-    const { data: waivers } = await supabase
-      .from('waivers')
-      .select('member_id, signed_at')
-      .order('signed_at', { ascending: false });
-
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-    const membersWithValidWaiver = new Set(
-      waivers
-        ?.filter((w) => new Date(w.signed_at) > oneYearAgo)
-        .map((w) => w.member_id) || []
-    );
-
-    const pendingWaivers =
-      data?.filter((m) => m.status === 'active' && !membersWithValidWaiver.has(m.id)).length || 0;
-
-    setStats({
+    // Update total members count
+    setStats(prev => ({
+      ...prev,
       totalMembers: data?.length || 0,
-      activeMembers: active,
-      pendingWaivers,
-      checkedInToday: checkedIn || 0,
-    });
+    }));
 
     setLoading(false);
   }, []);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const response = await fetch('/api/admin/stats');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+
+      const data = await response.json();
+
+      setStats(prev => ({
+        ...prev,
+        activeMembers: data.activeMembers,
+        checkedInToday: data.checkInsToday,
+        checkInsThisWeek: data.checkInsThisWeek,
+        expiringWaivers: data.expiringWaivers,
+        pendingWaivers: data.expiringWaivers, // Keep this for backwards compatibility
+      }));
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchMembers();
-  }, [fetchMembers]);
+    fetchStats();
+  }, [fetchMembers, fetchStats]);
 
   const handleSignOut = async () => {
     const supabase = createBrowserSupabaseClient();
@@ -193,22 +193,62 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Stats Cards */}
         {view === 'list' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
+            {/* Total Members */}
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-5 md:p-6">
               <p className="text-gray-400 text-sm mb-1">Total Members</p>
-              <p className="text-3xl md:text-4xl font-bold text-white">{stats.totalMembers}</p>
+              {loading ? (
+                <div className="h-10 bg-slate-700/30 animate-pulse rounded-lg mt-2"></div>
+              ) : (
+                <p className="text-3xl md:text-4xl font-bold text-white">{stats.totalMembers}</p>
+              )}
             </div>
+
+            {/* Active Members */}
             <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 border border-green-800/50 rounded-2xl p-5 md:p-6">
               <p className="text-gray-400 text-sm mb-1">Active Members</p>
-              <p className="text-3xl md:text-4xl font-bold text-green-400">{stats.activeMembers}</p>
+              {statsLoading ? (
+                <div className="h-10 bg-green-700/30 animate-pulse rounded-lg mt-2"></div>
+              ) : (
+                <p className="text-3xl md:text-4xl font-bold text-green-400">{stats.activeMembers}</p>
+              )}
             </div>
-            <Link href="/admin/waivers" className="bg-gradient-to-br from-amber-900/30 to-amber-950/30 border border-amber-800/50 rounded-2xl p-5 md:p-6 hover:border-amber-600 transition-colors">
-              <p className="text-gray-400 text-sm mb-1">Pending Waivers</p>
-              <p className="text-3xl md:text-4xl font-bold text-amber-400">{stats.pendingWaivers}</p>
-            </Link>
+
+            {/* Check-ins Today */}
             <Link href="/admin/check-ins" className="bg-gradient-to-br from-sky-900/30 to-sky-950/30 border border-sky-800/50 rounded-2xl p-5 md:p-6 hover:border-sky-600 transition-colors">
-              <p className="text-gray-400 text-sm mb-1">Checked In Today</p>
-              <p className="text-3xl md:text-4xl font-bold text-sky-400">{stats.checkedInToday}</p>
+              <p className="text-gray-400 text-sm mb-1">Check-ins Today</p>
+              {statsLoading ? (
+                <div className="h-10 bg-sky-700/30 animate-pulse rounded-lg mt-2"></div>
+              ) : (
+                <p className="text-3xl md:text-4xl font-bold text-sky-400">{stats.checkedInToday}</p>
+              )}
+            </Link>
+
+            {/* Check-ins This Week */}
+            <Link href="/admin/check-ins" className="bg-gradient-to-br from-purple-900/30 to-purple-950/30 border border-purple-800/50 rounded-2xl p-5 md:p-6 hover:border-purple-600 transition-colors">
+              <p className="text-gray-400 text-sm mb-1">Check-ins This Week</p>
+              {statsLoading ? (
+                <div className="h-10 bg-purple-700/30 animate-pulse rounded-lg mt-2"></div>
+              ) : (
+                <p className="text-3xl md:text-4xl font-bold text-purple-400">{stats.checkInsThisWeek}</p>
+              )}
+            </Link>
+
+            {/* Waivers Expiring Soon */}
+            <Link href="/admin/waivers" className="bg-gradient-to-br from-amber-900/30 to-amber-950/30 border border-amber-800/50 rounded-2xl p-5 md:p-6 hover:border-amber-600 transition-colors col-span-2 lg:col-span-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm mb-1">Waivers Expiring in Next 30 Days</p>
+                  {statsLoading ? (
+                    <div className="h-10 bg-amber-700/30 animate-pulse rounded-lg mt-2 w-24"></div>
+                  ) : (
+                    <p className="text-3xl md:text-4xl font-bold text-amber-400">{stats.expiringWaivers}</p>
+                  )}
+                </div>
+                <div className="text-gray-500 text-sm hidden md:block">
+                  <p>Click to view all waivers and send reminders</p>
+                </div>
+              </div>
             </Link>
           </div>
         )}

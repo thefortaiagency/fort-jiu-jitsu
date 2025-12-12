@@ -518,3 +518,247 @@ export async function sendContactNotification(data: ContactFormData) {
 
   return true;
 }
+
+// ==================== WAIVER EXPIRATION REMINDER EMAIL ====================
+
+interface WaiverExpirationReminderData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  expiresAt: string; // ISO date string
+  daysUntilExpiration: number;
+}
+
+export async function sendWaiverExpirationReminder(data: WaiverExpirationReminderData) {
+  console.log('📧 sendWaiverExpirationReminder called for:', data.email);
+
+  if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY not found in environment');
+    throw new Error('Email service not configured');
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const expiresDate = new Date(data.expiresAt);
+  const formattedDate = expiresDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f9f9f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+
+              <!-- Logo Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1b1b1b 0%, #303030 100%); padding: 50px 40px; text-align: center; border-radius: 16px 16px 0 0;">
+                  <img src="https://thefortjiujitsu.com/jiu-jitsu-email.png" alt="The Fort Jiu-Jitsu" style="width: 180px; height: auto; margin-bottom: 20px;" />
+                  <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                    Waiver Renewal Reminder
+                  </h1>
+                  <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 18px; font-weight: 400;">
+                    Your waiver expires soon
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Main Content -->
+              <tr>
+                <td style="background: #ffffff; padding: 50px 40px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
+
+                  <!-- Greeting -->
+                  <p style="color: #1b1b1b; font-size: 20px; line-height: 1.5; margin: 0 0 10px 0;">
+                    Hi ${data.firstName},
+                  </p>
+                  <p style="color: #5e5e5e; font-size: 16px; line-height: 1.7; margin: 0 0 30px 0;">
+                    This is a friendly reminder that your waiver at <strong style="color: #1b1b1b;">The Fort Jiu-Jitsu</strong> will expire in <strong style="color: #1b1b1b;">${data.daysUntilExpiration} days</strong>.
+                  </p>
+
+                  <!-- Expiration Card -->
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%); border-radius: 12px; padding: 30px; border: 2px solid #ff6b6b;">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                          <tr>
+                            <td style="text-align: center; padding-bottom: 15px;">
+                              <div style="display: inline-block; width: 80px; height: 80px; background: #ff6b6b; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                <span style="color: white; font-size: 36px; font-weight: 700; line-height: 1;">!</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="text-align: center;">
+                              <span style="color: #777777; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px;">Waiver Expires On</span>
+                              <p style="color: #1b1b1b; font-size: 24px; font-weight: 700; margin: 0;">
+                                ${formattedDate}
+                              </p>
+                              <p style="color: #ff6b6b; font-size: 18px; font-weight: 600; margin: 15px 0 0 0;">
+                                ${data.daysUntilExpiration} days remaining
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Why This Matters -->
+                  <div style="background: #f9f9f9; border-left: 4px solid #1b1b1b; border-radius: 0 8px 8px 0; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: #1b1b1b; margin: 0 0 15px 0; font-size: 18px;">
+                      Why does this matter?
+                    </h3>
+                    <p style="color: #5e5e5e; line-height: 1.7; margin: 0; font-size: 15px;">
+                      For safety and legal reasons, all members must have a valid waiver on file. Once your waiver expires, you won't be able to participate in training until you renew it.
+                    </p>
+                  </div>
+
+                  <!-- Action Required Section -->
+                  <h3 style="color: #1b1b1b; font-size: 18px; font-weight: 600; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #1b1b1b; display: inline-block;">
+                    Action Required
+                  </h3>
+                  <p style="color: #5e5e5e; font-size: 15px; line-height: 1.7; margin: 0 0 25px 0;">
+                    Please take a moment to renew your waiver online. It only takes 2 minutes and ensures uninterrupted access to training.
+                  </p>
+
+                  <!-- CTA Button -->
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <tr>
+                      <td align="center">
+                        <a href="https://thefortjiujitsu.com/member/renew-waiver"
+                           style="display: inline-block; background: #1b1b1b; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-weight: 600; font-size: 16px;">
+                          Renew Your Waiver Now &#8594;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Steps -->
+                  <div style="border-left: 3px solid #303030; padding-left: 20px; margin: 30px 0;">
+                    <h4 style="color: #1b1b1b; margin: 0 0 10px 0; font-size: 16px;">Quick Steps to Renew:</h4>
+                    <ol style="color: #5e5e5e; margin: 0; padding-left: 20px; line-height: 1.8;">
+                      <li>Click the button above to access the renewal form</li>
+                      <li>Review the waiver terms</li>
+                      <li>Sign electronically with your mouse or finger</li>
+                      <li>Submit - you're done!</li>
+                    </ol>
+                  </div>
+
+                  <!-- Contact Info Card -->
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 30px;">
+                    <tr>
+                      <td style="background: #f9f9f9; border-radius: 12px; padding: 25px; text-align: center;">
+                        <p style="color: #777777; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">
+                          Questions? We're Here to Help
+                        </p>
+                        <p style="color: #1b1b1b; font-size: 16px; margin: 0 0 5px 0;">
+                          Call us at <a href="tel:2604527615" style="color: #1b1b1b; font-weight: 600; text-decoration: none;">(260) 452-7615</a>
+                        </p>
+                        <p style="color: #5e5e5e; font-size: 14px; margin: 0;">
+                          Or visit us at 1519 Goshen Road, Fort Wayne, IN 46808
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background: #1b1b1b; padding: 35px 40px; text-align: center; border-radius: 0 0 16px 16px;">
+                  <p style="color: rgba(255,255,255,0.9); font-size: 16px; font-style: italic; margin: 0 0 20px 0;">
+                    "It is not about the destination, it is about the journey."
+                  </p>
+                  <p style="color: rgba(255,255,255,0.6); font-size: 14px; margin: 0 0 10px 0;">
+                    Thank you for being part of The Fort family!
+                  </p>
+                  <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin: 0;">
+                    The Fort Jiu-Jitsu &bull; <a href="https://thefortjiujitsu.com" style="color: rgba(255,255,255,0.6); text-decoration: none;">thefortjiujitsu.com</a>
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const plainText = `
+Waiver Renewal Reminder - The Fort Jiu-Jitsu
+
+Hi ${data.firstName},
+
+This is a friendly reminder that your waiver at The Fort Jiu-Jitsu will expire in ${data.daysUntilExpiration} days.
+
+WAIVER EXPIRATION DATE
+----------------------
+${formattedDate}
+${data.daysUntilExpiration} days remaining
+
+WHY THIS MATTERS
+----------------
+For safety and legal reasons, all members must have a valid waiver on file. Once your waiver expires, you won't be able to participate in training until you renew it.
+
+ACTION REQUIRED
+---------------
+Please take a moment to renew your waiver online. It only takes 2 minutes and ensures uninterrupted access to training.
+
+RENEW YOUR WAIVER NOW
+---------------------
+https://thefortjiujitsu.com/member/renew-waiver
+
+QUICK STEPS TO RENEW
+--------------------
+1. Click the link above to access the renewal form
+2. Review the waiver terms
+3. Sign electronically with your mouse or finger
+4. Submit - you're done!
+
+QUESTIONS?
+----------
+Call us at (260) 452-7615
+Visit us at 1519 Goshen Road, Fort Wayne, IN 46808
+
+"It is not about the destination, it is about the journey."
+
+Thank you for being part of The Fort family!
+
+The Fort Jiu-Jitsu
+thefortjiujitsu.com
+`;
+
+  try {
+    const result = await resend.emails.send({
+      from: `The Fort Jiu-Jitsu <${(process.env.RESEND_FROM_EMAIL || 'noreply@thefortaiagency.ai').trim()}>`,
+      to: data.email.trim(),
+      subject: `Reminder: Your waiver expires in ${data.daysUntilExpiration} days`,
+      html: emailHtml,
+      text: plainText,
+    });
+
+    if (result.error) {
+      console.error('❌ Failed to send waiver reminder:', result.error);
+      throw new Error(`Email failed: ${result.error.message}`);
+    }
+
+    console.log('✅ Waiver reminder sent successfully! ID:', result.data?.id);
+    return true;
+  } catch (error) {
+    console.error('❌ Waiver reminder error:', error);
+    throw error;
+  }
+}

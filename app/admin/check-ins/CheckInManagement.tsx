@@ -42,6 +42,9 @@ export default function CheckInManagement({ user }: CheckInManagementProps) {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportRange, setExportRange] = useState<'last-7' | 'last-30' | 'all'>('last-30');
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchCheckIns = useCallback(async () => {
     setLoading(true);
@@ -166,29 +169,46 @@ export default function CheckInManagement({ user }: CheckInManagementProps) {
     fetchCheckIns();
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Member Name', 'Email', 'Program', 'Check-In Time'];
-    const rows = checkIns.map((checkIn) => [
-      checkIn.member
-        ? `${checkIn.member.first_name} ${checkIn.member.last_name}`
-        : 'Unknown',
-      checkIn.member?.email || '',
-      checkIn.member?.program || '',
-      new Date(checkIn.checked_in_at).toLocaleTimeString(),
-    ]);
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const url = `/api/admin/check-ins/export?range=${exportRange}`;
+      const response = await fetch(url);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
+      if (!response.ok) {
+        throw new Error('Failed to export check-ins');
+      }
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `check-ins-${selectedDate}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      // Get the CSV content as blob
+      const blob = await response.blob();
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'check-ins-export.csv';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create download link and trigger download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export check-ins. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const formatProgram = (program: string) => {
@@ -268,11 +288,23 @@ export default function CheckInManagement({ user }: CheckInManagementProps) {
                 Manual Check-In
               </button>
               <button
-                onClick={handleExportCSV}
-                disabled={checkIns.length === 0}
-                className="px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowExportModal(true)}
+                className="px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
               >
-                Export CSV
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Download CSV
               </button>
             </div>
           </div>
@@ -432,6 +464,107 @@ export default function CheckInManagement({ user }: CheckInManagementProps) {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Check In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export CSV Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold mb-4">Export Attendance Report</h3>
+
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-3">Select Time Range</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-3 border border-gray-700 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                  <input
+                    type="radio"
+                    name="exportRange"
+                    value="last-7"
+                    checked={exportRange === 'last-7'}
+                    onChange={(e) => setExportRange(e.target.value as 'last-7' | 'last-30' | 'all')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div>
+                    <div className="text-white font-medium">Last 7 Days</div>
+                    <div className="text-sm text-gray-400">Recent week of attendance</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 border border-gray-700 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                  <input
+                    type="radio"
+                    name="exportRange"
+                    value="last-30"
+                    checked={exportRange === 'last-30'}
+                    onChange={(e) => setExportRange(e.target.value as 'last-7' | 'last-30' | 'all')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div>
+                    <div className="text-white font-medium">Last 30 Days</div>
+                    <div className="text-sm text-gray-400">Monthly attendance report</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 border border-gray-700 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                  <input
+                    type="radio"
+                    name="exportRange"
+                    value="all"
+                    checked={exportRange === 'all'}
+                    onChange={(e) => setExportRange(e.target.value as 'last-7' | 'last-30' | 'all')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div>
+                    <div className="text-white font-medium">All Time</div>
+                    <div className="text-sm text-gray-400">Complete attendance history</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setShowExportModal(false);
+                  setExportRange('last-30');
+                }}
+                disabled={isExporting}
+                className="px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExportCSV}
+                disabled={isExporting}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isExporting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Download CSV
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -10,6 +10,17 @@ import Footer from '../../components/Footer';
 function CheckInContent() {
   const searchParams = useSearchParams();
   const name = searchParams.get('name') || 'Member';
+  const count = parseInt(searchParams.get('count') || '1', 10);
+
+  // Determine ordinal suffix (1st, 2nd, 3rd, etc.)
+  const getOrdinalSuffix = (num: number) => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
+    return 'th';
+  };
 
   return (
     <motion.div
@@ -24,10 +35,14 @@ function CheckInContent() {
         </svg>
       </div>
 
-      <h1 className="text-4xl font-serif mb-4">You're Checked In!</h1>
+      <h1 className="text-4xl font-serif mb-4">Welcome back, {name}!</h1>
 
-      <p className="text-xl text-gray-300 mb-8">
-        Welcome to class, {name}! Have a great training session.
+      <p className="text-xl text-gray-300 mb-4">
+        This is your <span className="font-bold text-green-400">{count}{getOrdinalSuffix(count)}</span> class this month!
+      </p>
+
+      <p className="text-lg text-gray-400 mb-8">
+        Have a great training session.
       </p>
 
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8">
