@@ -335,6 +335,7 @@ export default function PromotionsPage() {
       </main>
 
       {/* Promotion Modal */}
+      {promotingMember && console.log('Rendering PromotionModal for:', promotingMember.id)}
       {promotingMember && (
         <PromotionModal
           member={{
@@ -367,6 +368,11 @@ function MemberRow({
   onPromote: () => void;
 }) {
   const { eligibility } = member;
+
+  const handlePromoteClick = () => {
+    console.log('Promote clicked for member:', member.id, member.first_name, member.last_name);
+    onPromote();
+  };
 
   return (
     <tr className={selected ? 'bg-gray-800/50' : 'hover:bg-gray-800/30'}>
@@ -418,7 +424,7 @@ function MemberRow({
       </td>
       <td className="px-6 py-4">
         <button
-          onClick={onPromote}
+          onClick={handlePromoteClick}
           className="text-sm text-white hover:text-gray-300 font-medium px-3 py-1 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
         >
           Promote
