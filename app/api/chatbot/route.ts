@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { TECHNIQUES, CATEGORIES, DIFFICULTY_LABELS, POSITIONS } from '@/lib/techniques-data';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 // Build technique knowledge base for the system prompt
 function buildTechniqueKnowledge(): string {
@@ -113,7 +121,7 @@ export async function POST(request: NextRequest) {
     // Add the current message
     messages.push({ role: 'user', content: message });
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
       max_tokens: 800,
