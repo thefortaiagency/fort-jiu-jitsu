@@ -66,6 +66,8 @@ export interface Member {
   current_stripes?: number;
   belt_updated_at?: string;
   total_classes_attended?: number;
+  // Quick Login
+  one_click_login_enabled?: boolean;
   // Timestamps
   created_at: string;
   updated_at: string;

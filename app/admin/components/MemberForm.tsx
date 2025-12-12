@@ -50,6 +50,8 @@ export default function MemberForm({ member, onSave, onCancel }: MemberFormProps
     payment_status: member?.payment_status || 'pending',
     individual_monthly_cost: member?.individual_monthly_cost || 100,
     is_primary_account_holder: member?.is_primary_account_holder ?? true,
+    // Quick login
+    one_click_login_enabled: member?.one_click_login_enabled ?? false,
   });
 
   const handleChange = (
@@ -283,6 +285,21 @@ export default function MemberForm({ member, onSave, onCancel }: MemberFormProps
                 min="0"
                 className="w-full px-4 py-2 bg-black border border-gray-700 rounded-lg text-white"
               />
+            </div>
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="one_click_login_enabled"
+                  checked={formData.one_click_login_enabled}
+                  onChange={handleChange}
+                  className="w-5 h-5 rounded border-gray-700 bg-black text-white focus:ring-white"
+                />
+                <div>
+                  <span className="text-white font-medium">Enable One-Click Login</span>
+                  <p className="text-sm text-gray-500">Member will appear in quick login list on the member portal</p>
+                </div>
+              </label>
             </div>
           </div>
         </div>

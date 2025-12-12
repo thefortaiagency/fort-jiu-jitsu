@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Mail, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, ArrowRight, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
@@ -10,9 +10,31 @@ interface MemberLoginProps {
   isLoading: boolean;
 }
 
+interface QuickLoginMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  program: string;
+}
+
 export default function MemberLogin({ onLogin, isLoading }: MemberLoginProps) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [quickLoginMembers, setQuickLoginMembers] = useState<QuickLoginMember[]>([]);
+
+  useEffect(() => {
+    async function fetchQuickLoginMembers() {
+      try {
+        const res = await fetch('/api/members/quick-login');
+        const data = await res.json();
+        setQuickLoginMembers(data.members || []);
+      } catch (err) {
+        console.error('Failed to fetch quick login members:', err);
+      }
+    }
+    fetchQuickLoginMembers();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +55,44 @@ export default function MemberLogin({ onLogin, isLoading }: MemberLoginProps) {
       transition={{ duration: 0.3 }}
       className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030] shadow-lg shadow-black/5"
     >
+      {/* Quick Login Buttons */}
+      {quickLoginMembers.length > 0 && (
+        <div className="mb-8">
+          <p className="text-sm text-[#777777] mb-4 text-center">Quick Login</p>
+          <div className="grid grid-cols-1 gap-3">
+            {quickLoginMembers.map((member) => (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => onLogin(member.email)}
+                disabled={isLoading}
+                className="flex items-center gap-3 w-full px-4 py-3 bg-[#f9f9f9] dark:bg-[#0a0a0a] border border-[#e2e2e2] dark:border-[#303030] rounded-xl text-left hover:border-[#1b1b1b] dark:hover:border-white transition-all disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#1b1b1b] dark:bg-white flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-white dark:text-[#1b1b1b]" />
+                </div>
+                <div>
+                  <p className="font-medium text-[#1b1b1b] dark:text-white">
+                    {member.first_name} {member.last_name}
+                  </p>
+                  <p className="text-sm text-[#777777]">
+                    {member.program?.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || 'Member'}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#e2e2e2] dark:border-[#303030]" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white dark:bg-[#1b1b1b] text-[#777777]">or enter email</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-[#5e5e5e] dark:text-[#b9b9b9] mb-2">
