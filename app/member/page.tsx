@@ -1,18 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MemberLogin from './components/MemberLogin';
 import MemberDashboard from './components/MemberDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navigation from '../components/Navigation';
 
+const MEMBER_EMAIL_KEY = 'fort-member-email';
+
 export default function MemberPortal() {
   const [memberEmail, setMemberEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Check for saved session on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(MEMBER_EMAIL_KEY);
+    if (savedEmail) {
+      setMemberEmail(savedEmail);
+    }
+    setIsCheckingSession(false);
+  }, []);
 
   const handleLogin = (email: string) => {
     setIsLoading(true);
-    // Simulate a brief loading state
+    // Save to localStorage for persistent login
+    localStorage.setItem(MEMBER_EMAIL_KEY, email);
     setTimeout(() => {
       setMemberEmail(email);
       setIsLoading(false);
@@ -20,6 +33,7 @@ export default function MemberPortal() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem(MEMBER_EMAIL_KEY);
     setMemberEmail(null);
   };
 
@@ -53,7 +67,17 @@ export default function MemberPortal() {
       <main className="pt-32 pb-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <AnimatePresence mode="wait">
-            {!memberEmail ? (
+            {isCheckingSession ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-center min-h-[400px]"
+              >
+                <div className="w-8 h-8 border-2 border-[#1b1b1b] dark:border-white border-t-transparent rounded-full animate-spin" />
+              </motion.div>
+            ) : !memberEmail ? (
               <motion.div
                 key="login"
                 initial={{ opacity: 0, y: 20 }}
