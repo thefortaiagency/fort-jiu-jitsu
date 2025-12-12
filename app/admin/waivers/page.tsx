@@ -26,7 +26,7 @@ export default async function WaiversPage() {
       last_name,
       email,
       status,
-      date_of_birth
+      birth_date
     `)
     .order('last_name', { ascending: true });
 

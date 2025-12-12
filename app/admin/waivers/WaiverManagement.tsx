@@ -20,7 +20,7 @@ interface Member {
   last_name: string;
   email: string | null;
   status: string;
-  date_of_birth: string | null;
+  birth_date: string | null;
 }
 
 interface Waiver {
@@ -74,9 +74,9 @@ export default function WaiverManagement({
 
         // Check if member turned 18 and needs new waiver
         if (
-          member.date_of_birth &&
+          member.birth_date &&
           needsAdultWaiver(
-            member.date_of_birth,
+            member.birth_date,
             mostRecentWaiver.signed_at,
             mostRecentWaiver.signer_relationship
           )
