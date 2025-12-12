@@ -14,6 +14,73 @@ function getOpenAIClient(): OpenAI {
   return openai;
 }
 
+// ==================== SECURITY: Rate Limiting ====================
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 20; // requests per window
+const RATE_WINDOW = 60 * 1000; // 1 minute in ms
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(ip);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
+
+// ==================== SECURITY: Input Sanitization ====================
+function sanitizeInput(input: string): string {
+  return input
+    // Remove potential script tags
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Limit length to prevent abuse
+    .slice(0, 1000)
+    .trim();
+}
+
+// ==================== SECURITY: Prompt Injection Defense ====================
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?)/i,
+  /disregard\s+(all\s+)?(previous|above|prior)/i,
+  /forget\s+(everything|all|your)\s+(you\s+)?learned/i,
+  /you\s+are\s+now\s+(a|an)\s+/i,
+  /pretend\s+(to\s+be|you('re|are))/i,
+  /act\s+as\s+(if|though|a)/i,
+  /new\s+persona/i,
+  /jailbreak/i,
+  /bypass\s+(your\s+)?(filters?|restrictions?|rules?)/i,
+  /system\s*:\s*/i,
+  /\[INST\]/i,
+  /<<SYS>>/i,
+  /\{\{.*\}\}/,
+  /\$\{.*\}/,
+];
+
+function detectPromptInjection(message: string): boolean {
+  const lowerMessage = message.toLowerCase();
+  return INJECTION_PATTERNS.some(pattern => pattern.test(lowerMessage));
+}
+
+// ==================== SECURITY: Content Validation ====================
+function isValidMessage(message: unknown): message is string {
+  return (
+    typeof message === 'string' &&
+    message.length > 0 &&
+    message.length <= 1000 &&
+    !message.includes('\x00') // No null bytes
+  );
+}
+
 // Build technique knowledge base for the system prompt
 function buildTechniqueKnowledge(): string {
   const categories = Object.entries(CATEGORIES)
@@ -82,10 +149,18 @@ ABOUT THE FORT JIU-JITSU:
 RESPONSE STYLE:
 - Keep responses conversational and relatively brief (2-4 short paragraphs max)
 - NO markdown formatting - write naturally like you're texting a training partner
+- When mentioning URLs, just write them plainly like "thefortjiujitsu.com/techniques" - they will automatically become clickable links
 - When explaining techniques, be practical: "From closed guard, break their posture first - think about pulling them into your chest like you're hugging them"
 - Share "war stories" occasionally: "I got caught in this choke so many times before I figured out..."
 - End with encouragement or a follow-up question when it fits naturally
 - If someone's frustrated, acknowledge it: "I feel you. Everyone plateaus. That's when the real growth happens."
+
+LINKS TO USE (these automatically become clickable):
+- Techniques library: thefortjiujitsu.com/techniques
+- Schedule: thefortjiujitsu.com/schedule
+- Contact/Join: thefortjiujitsu.com/contact
+- About us: thefortjiujitsu.com/about
+- Sign up: thefortjiujitsu.com/signup
 
 WHEN DISCUSSING TECHNIQUES:
 - Explain the "why" not just the "how" - BJJ is chess, not checkers
@@ -115,34 +190,56 @@ Remember: You're not just answering questions, you're sharing your love of the a
 
 export async function POST(request: NextRequest) {
   try {
+    // ==================== SECURITY: Rate Limiting Check ====================
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment before trying again.' },
+        { status: 429 }
+      );
+    }
+
     const { message, history } = await request.json();
 
-    if (!message || typeof message !== 'string') {
+    // ==================== SECURITY: Input Validation ====================
+    if (!isValidMessage(message)) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { error: 'Invalid message format' },
         { status: 400 }
       );
     }
+
+    // ==================== SECURITY: Prompt Injection Detection ====================
+    if (detectPromptInjection(message)) {
+      return NextResponse.json(
+        { response: "OSS! I appreciate the creativity, but I'm here to talk Jiu-Jitsu! What technique do you want to work on today?" }
+      );
+    }
+
+    // Sanitize the input
+    const sanitizedMessage = sanitizeInput(message);
 
     // Build messages array with history
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: 'system', content: SYSTEM_PROMPT },
     ];
 
-    // Add conversation history (last 10 messages)
+    // Add conversation history (last 10 messages) - sanitize each one
     if (history && Array.isArray(history)) {
       history.slice(-10).forEach((msg: { role: string; content: string }) => {
         if (msg.role === 'user' || msg.role === 'assistant') {
           messages.push({
             role: msg.role as 'user' | 'assistant',
-            content: msg.content,
+            content: sanitizeInput(msg.content),
           });
         }
       });
     }
 
-    // Add the current message
-    messages.push({ role: 'user', content: message });
+    // Add the current message (sanitized)
+    messages.push({ role: 'user', content: sanitizedMessage });
 
     const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o-mini',

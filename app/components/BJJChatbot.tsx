@@ -19,9 +19,29 @@ const SUGGESTED_QUESTIONS = [
   "Tips for my first competition?",
 ];
 
-// Format message to clean up markdown and make it conversational
+// Sanitize HTML to prevent XSS - only allow safe tags and attributes
+function sanitizeHtml(html: string): string {
+  // First, escape everything
+  let safe = html
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  // Then selectively allow safe anchor tags with only href to our domain or relative paths
+  // Match patterns like: &lt;a href="..."&gt;...&lt;/a&gt;
+  safe = safe.replace(
+    /&lt;a\s+href=&quot;((?:https?:\/\/(?:www\.)?thefortjiujitsu\.com)?\/[^&]*)&quot;&gt;([^&]*?)&lt;\/a&gt;/gi,
+    '<a href="$1" class="text-[#b9955a] hover:text-[#d4af6a] underline" target="_blank" rel="noopener noreferrer">$2</a>'
+  );
+
+  return safe;
+}
+
+// Format message to clean up markdown, convert URLs to links, and make it conversational
 function formatMessage(content: string): string {
-  return content
+  let formatted = content
     // Remove markdown headers
     .replace(/#{1,6}\s*/g, '')
     // Remove bold markdown
@@ -35,6 +55,15 @@ function formatMessage(content: string): string {
     // Clean up excessive newlines
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  // Convert plain URLs to clickable links (only for thefortjiujitsu.com or relative paths)
+  // Match thefortjiujitsu.com URLs
+  formatted = formatted.replace(
+    /(?<!<a[^>]*href=["']?)(?:https?:\/\/)?(?:www\.)?thefortjiujitsu\.com(\/[^\s<]*)?/gi,
+    '<a href="https://thefortjiujitsu.com$1" class="text-[#b9955a] hover:text-[#d4af6a] underline" target="_blank" rel="noopener noreferrer">thefortjiujitsu.com$1</a>'
+  );
+
+  return formatted;
 }
 
 export default function BJJChatbot() {
@@ -138,7 +167,7 @@ export default function BJJChatbot() {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-20 h-20 md:w-24 md:h-24 rounded-full shadow-2xl overflow-hidden border-3 border-[#b9955a] hover:border-[#d4af6a] transition-all duration-300"
+            className="fixed bottom-6 right-6 z-50 w-24 h-24 md:w-28 md:h-28 rounded-full shadow-2xl overflow-hidden border-3 border-[#b9955a] hover:border-[#d4af6a] transition-all duration-300"
             style={{
               boxShadow: '0 8px 32px rgba(185, 149, 90, 0.5), 0 0 60px rgba(185, 149, 90, 0.2)',
             }}
@@ -232,7 +261,10 @@ export default function BJJChatbot() {
                             : 'bg-[#1b1b1b] text-[#e8e8e8] border border-[#333]'
                         }`}
                       >
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <div
+                          className="text-sm leading-relaxed whitespace-pre-wrap [&_a]:text-[#b9955a] [&_a]:hover:text-[#d4af6a] [&_a]:underline"
+                          dangerouslySetInnerHTML={{ __html: message.content }}
+                        />
                       </div>
                     </motion.div>
                   ))}
