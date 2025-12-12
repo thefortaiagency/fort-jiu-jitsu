@@ -65,7 +65,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
               <!-- Logo Header -->
               <tr>
                 <td style="background: linear-gradient(135deg, #1b1b1b 0%, #303030 100%); padding: 50px 40px; text-align: center; border-radius: 16px 16px 0 0;">
-                  <img src="https://thefortjiujitsu.com/jiu-jitsu-white.png" alt="The Fort Jiu-Jitsu" style="width: 180px; height: auto; margin-bottom: 20px;" />
+                  <img src="https://thefortjiujitsu.com/jiu-jitsu-email.png" alt="The Fort Jiu-Jitsu" style="width: 180px; height: auto; margin-bottom: 20px;" />
                   <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
                     Welcome to The Fort!
                   </h1>
