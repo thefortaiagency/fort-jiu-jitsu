@@ -101,7 +101,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ member });
+    // Check if member has a family account and get family members
+    let familyMembers: any[] = [];
+    const { data: memberWithFamily } = await supabase
+      .from('members')
+      .select('family_account_id')
+      .eq('id', member.id)
+      .single();
+
+    if (memberWithFamily?.family_account_id) {
+      const { data: familyData } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, email, program, status')
+        .eq('family_account_id', memberWithFamily.family_account_id)
+        .eq('status', 'active');
+
+      familyMembers = familyData || [];
+    }
+
+    return NextResponse.json({
+      member,
+      familyMembers,
+      hasFamilyAccount: familyMembers.length > 1
+    });
   } catch (error) {
     console.error('Member lookup error:', error);
     return NextResponse.json(

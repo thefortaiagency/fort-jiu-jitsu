@@ -43,6 +43,15 @@ interface CheckInResult {
   message: string;
 }
 
+interface FamilyMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  program: string;
+  status: string;
+}
+
 export default function KioskPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -71,6 +80,10 @@ export default function KioskPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [familyCheckInMode, setFamilyCheckInMode] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [selectedFamilyMembers, setSelectedFamilyMembers] = useState<Set<string>>(new Set());
+  const [scannedMember, setScannedMember] = useState<Member | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [todayCount, setTodayCount] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -300,7 +313,19 @@ export default function KioskPage() {
       const data = await res.json();
 
       if (data.member) {
-        await handleCheckIn(data.member);
+        // Check if this member has family members
+        if (data.hasFamilyAccount && data.familyMembers && data.familyMembers.length > 1) {
+          // Show family check-in mode
+          setScannedMember(data.member);
+          setFamilyMembers(data.familyMembers);
+          // Pre-select the scanned member
+          setSelectedFamilyMembers(new Set([data.member.id]));
+          setFamilyCheckInMode(true);
+          setIsLoading(false);
+        } else {
+          // No family, just check in the individual
+          await handleCheckIn(data.member);
+        }
       } else {
         setCheckInResult({
           success: false,
@@ -325,7 +350,86 @@ export default function KioskPage() {
         }
       }, 3000);
     } finally {
+      if (!familyCheckInMode) {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  // Handle family check-in submission
+  async function handleFamilyCheckIn() {
+    if (selectedFamilyMembers.size === 0) return;
+    setIsLoading(true);
+
+    const membersToCheckIn = familyMembers.filter(fm => selectedFamilyMembers.has(fm.id));
+    const checkedInNames: string[] = [];
+
+    try {
+      // Check in all selected family members
+      for (const member of membersToCheckIn) {
+        const res = await fetch('/api/check-ins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            member_id: member.id,
+            check_in_method: 'kiosk-family',
+          }),
+        });
+
+        if (res.ok) {
+          checkedInNames.push(member.first_name);
+        }
+      }
+
+      // Reset family check-in mode
+      setFamilyCheckInMode(false);
+      setFamilyMembers([]);
+      setSelectedFamilyMembers(new Set());
+      setScannedMember(null);
+
+      if (checkedInNames.length > 0) {
+        // Redirect to success page with all names
+        const namesParam = checkedInNames.join(', ');
+        window.location.href = `/check-in/success?name=${encodeURIComponent(namesParam)}&count=${checkedInNames.length}&family=true`;
+      } else {
+        setCheckInResult({
+          success: false,
+          message: 'Check-in failed. Please try again.',
+        });
+        setTimeout(() => setCheckInResult(null), 4000);
+      }
+    } catch (error) {
+      setCheckInResult({
+        success: false,
+        message: 'Network error. Please try again.',
+      });
+      setTimeout(() => setCheckInResult(null), 4000);
+    } finally {
       setIsLoading(false);
+    }
+  }
+
+  // Toggle family member selection
+  function toggleFamilyMember(memberId: string) {
+    setSelectedFamilyMembers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId);
+      } else {
+        newSet.add(memberId);
+      }
+      return newSet;
+    });
+  }
+
+  // Cancel family check-in
+  function cancelFamilyCheckIn() {
+    setFamilyCheckInMode(false);
+    setFamilyMembers([]);
+    setSelectedFamilyMembers(new Set());
+    setScannedMember(null);
+    if (mode === 'scan') {
+      startScanner();
     }
   }
 
@@ -730,6 +834,121 @@ export default function KioskPage() {
                   </p>
                 )}
                 <p className="text-gray-500 mt-6 text-sm">This will close automatically...</p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Family Check-In Modal */}
+        <AnimatePresence>
+          {familyCheckInMode && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-2xl bg-gradient-to-br from-gray-900 to-black rounded-3xl border-2 border-purple-500/50 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-900/50 to-purple-800/50 p-6 text-center">
+                  <div className="w-16 h-16 bg-purple-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Users className="w-8 h-8 text-purple-300" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">Family Check-In</h2>
+                  <p className="text-purple-300/80 mt-2">Select who&apos;s training today</p>
+                </div>
+
+                {/* Family Members List */}
+                <div className="p-6 max-h-[50vh] overflow-y-auto">
+                  <div className="space-y-3">
+                    {familyMembers.map((member) => {
+                      const isSelected = selectedFamilyMembers.has(member.id);
+                      const isScanned = scannedMember?.id === member.id;
+                      return (
+                        <motion.button
+                          key={member.id}
+                          onClick={() => toggleFamilyMember(member.id)}
+                          whileTap={{ scale: 0.98 }}
+                          className={`w-full p-4 md:p-5 flex items-center gap-4 rounded-2xl border-2 transition-all ${
+                            isSelected
+                              ? 'bg-purple-900/50 border-purple-500 shadow-lg shadow-purple-500/20'
+                              : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                          }`}
+                        >
+                          <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center ${
+                            isSelected ? 'bg-purple-600' : 'bg-gray-700'
+                          }`}>
+                            {isSelected ? (
+                              <CheckCircle className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                            ) : (
+                              <User className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className={`text-lg md:text-xl font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                              {member.first_name} {member.last_name}
+                              {isScanned && (
+                                <span className="ml-2 text-xs bg-purple-600 px-2 py-0.5 rounded-full text-purple-100">
+                                  Scanned
+                                </span>
+                              )}
+                            </p>
+                            <p className={`text-sm capitalize ${isSelected ? 'text-purple-300' : 'text-gray-500'}`}>
+                              {member.program?.replace('-', ' ')} Program
+                            </p>
+                          </div>
+                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                            isSelected ? 'border-purple-400 bg-purple-600' : 'border-gray-600'
+                          }`}>
+                            {isSelected && <CheckCircle className="w-5 h-5 text-white" />}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Footer with Actions */}
+                <div className="p-6 bg-black/50 border-t border-gray-800">
+                  <div className="flex gap-4">
+                    <button
+                      onClick={cancelFamilyCheckIn}
+                      className="flex-1 px-6 py-4 bg-gray-800 border border-gray-700 rounded-2xl font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <motion.button
+                      onClick={handleFamilyCheckIn}
+                      disabled={isLoading || selectedFamilyMembers.size === 0}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-[2] px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl font-bold text-white text-lg hover:from-purple-500 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-purple-500/20"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center justify-center gap-3">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full"
+                          />
+                          Checking in...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <CheckCircle className="w-6 h-6" />
+                          Check In {selectedFamilyMembers.size} {selectedFamilyMembers.size === 1 ? 'Person' : 'People'}
+                        </span>
+                      )}
+                    </motion.button>
+                  </div>
+                  <p className="text-center text-gray-500 text-sm mt-4">
+                    Tap family members to select or deselect
+                  </p>
+                </div>
               </motion.div>
             </motion.div>
           )}

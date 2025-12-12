@@ -97,7 +97,8 @@ export async function GET(
           status,
           is_primary_account_holder,
           current_belt_id,
-          current_stripes
+          current_stripes,
+          qr_code
         `)
         .eq('family_account_id', member.family_account_id);
 
@@ -145,6 +146,7 @@ export async function GET(
       program: fm.program,
       status: fm.status,
       isPrimaryAccountHolder: fm.is_primary_account_holder,
+      qrCode: fm.qr_code,
     }));
 
     return NextResponse.json({
