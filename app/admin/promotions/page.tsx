@@ -335,7 +335,6 @@ export default function PromotionsPage() {
       </main>
 
       {/* Promotion Modal */}
-      {promotingMember && console.log('Rendering PromotionModal for:', promotingMember.id)}
       {promotingMember && (
         <PromotionModal
           member={{
