@@ -52,7 +52,7 @@ export default function MemberPortal() {
 
       <Navigation />
 
-      <main className="pt-32 pb-24 min-h-screen relative z-10">
+      <main className="pt-32 pb-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <AnimatePresence mode="wait">
             {!memberEmail ? (
