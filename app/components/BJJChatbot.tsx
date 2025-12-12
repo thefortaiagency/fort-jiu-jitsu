@@ -13,12 +13,29 @@ interface Message {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "What's the best submission for beginners?",
+  "Best submission for beginners?",
   "How do I escape mount?",
-  "Explain the triangle choke",
-  "What guard should I learn first?",
-  "How do I pass the guard?",
+  "What's your favorite choke?",
+  "Tips for my first competition?",
 ];
+
+// Format message to clean up markdown and make it conversational
+function formatMessage(content: string): string {
+  return content
+    // Remove markdown headers
+    .replace(/#{1,6}\s*/g, '')
+    // Remove bold markdown
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    // Remove italic markdown
+    .replace(/\*(.*?)\*/g, '$1')
+    // Remove bullet points and replace with line breaks
+    .replace(/^[-•]\s*/gm, '• ')
+    // Remove numbered lists formatting
+    .replace(/^\d+\.\s*/gm, '')
+    // Clean up excessive newlines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 export default function BJJChatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +44,7 @@ export default function BJJChatbot() {
     {
       id: '1',
       role: 'assistant',
-      content: "OSS! I'm your BJJ AI Assistant. Ask me anything about techniques, positions, submissions, or your Jiu-Jitsu journey. How can I help you today?",
+      content: "OSS! Welcome to The Fort! I'm Sensei Bot, your personal BJJ training partner. Whether you're a white belt wondering what an armbar is or a purple belt looking to sharpen your leg lock game - I've got you. What's on your mind?",
       timestamp: new Date(),
     },
   ]);
@@ -70,7 +87,7 @@ export default function BJJChatbot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content,
-          history: messages.slice(-10), // Send last 10 messages for context
+          history: messages.slice(-10),
         }),
       });
 
@@ -81,7 +98,7 @@ export default function BJJChatbot() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        content: formatMessage(data.response),
         timestamp: new Date(),
       };
 
@@ -91,7 +108,7 @@ export default function BJJChatbot() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
+        content: "Whoa, got caught in a scramble there! Give me a sec and try again - even black belts have off days.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -111,19 +128,19 @@ export default function BJJChatbot() {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - BIGGER! */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-2xl overflow-hidden border-2 border-[#b9955a] hover:border-[#d4af6a] transition-colors"
+            className="fixed bottom-6 right-6 z-50 w-20 h-20 md:w-24 md:h-24 rounded-full shadow-2xl overflow-hidden border-3 border-[#b9955a] hover:border-[#d4af6a] transition-all duration-300"
             style={{
-              boxShadow: '0 4px 20px rgba(185, 149, 90, 0.4)',
+              boxShadow: '0 8px 32px rgba(185, 149, 90, 0.5), 0 0 60px rgba(185, 149, 90, 0.2)',
             }}
           >
             <Image
@@ -132,11 +149,24 @@ export default function BJJChatbot() {
               fill
               className="object-cover"
             />
+            {/* Pulse ring effect */}
+            <motion.div
+              className="absolute inset-0 rounded-full border-2 border-[#b9955a]"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0, 0.5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Chat Window */}
+      {/* Chat Window - Bigger and cleaner */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -145,18 +175,18 @@ export default function BJJChatbot() {
               opacity: 1,
               y: 0,
               scale: 1,
-              height: isMinimized ? 'auto' : '600px'
+              height: isMinimized ? 'auto' : '550px'
             }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-[#0a0a0a] rounded-2xl shadow-2xl border border-[#303030] overflow-hidden flex flex-col"
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] bg-[#0a0a0a] rounded-3xl shadow-2xl border border-[#b9955a]/30 overflow-hidden flex flex-col"
             style={{
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(185, 149, 90, 0.1)',
+              boxShadow: '0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(185, 149, 90, 0.2)',
             }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#1b1b1b] to-[#252525] p-4 flex items-center gap-3 border-b border-[#303030]">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-[#b9955a]">
+            <div className="bg-gradient-to-r from-[#1a1a1a] via-[#222] to-[#1a1a1a] p-4 flex items-center gap-4 border-b border-[#b9955a]/20">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-[#b9955a] shadow-lg">
                 <Image
                   src="/bjj_chatbot_icon_v6.png"
                   alt="BJJ AI Assistant"
@@ -165,21 +195,21 @@ export default function BJJChatbot() {
                 />
               </div>
               <div className="flex-1">
-                <h3 className="font-serif font-bold text-white text-sm">BJJ AI Assistant</h3>
-                <p className="text-xs text-[#b9955a]">Master Level Instruction</p>
+                <h3 className="font-serif font-bold text-white text-base">Sensei Bot</h3>
+                <p className="text-xs text-[#b9955a]">Your BJJ Training Partner</p>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-2 text-[#777777] hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                  className="p-2 text-[#777] hover:text-white transition-colors rounded-lg hover:bg-white/5"
                 >
-                  {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                  {isMinimized ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 text-[#777777] hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                  className="p-2 text-[#777] hover:text-white transition-colors rounded-lg hover:bg-white/5"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -187,7 +217,7 @@ export default function BJJChatbot() {
             {/* Messages */}
             {!isMinimized && (
               <>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[400px]">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[280px] max-h-[350px]">
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
@@ -198,11 +228,11 @@ export default function BJJChatbot() {
                       <div
                         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                           message.role === 'user'
-                            ? 'bg-[#b9955a] text-[#0a0a0a]'
-                            : 'bg-[#1b1b1b] text-[#e2e2e2] border border-[#303030]'
+                            ? 'bg-gradient-to-r from-[#b9955a] to-[#d4a85a] text-[#0a0a0a] font-medium'
+                            : 'bg-[#1b1b1b] text-[#e8e8e8] border border-[#333]'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                       </div>
                     </motion.div>
                   ))}
@@ -213,10 +243,26 @@ export default function BJJChatbot() {
                       animate={{ opacity: 1 }}
                       className="flex justify-start"
                     >
-                      <div className="bg-[#1b1b1b] border border-[#303030] rounded-2xl px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#b9955a]" />
-                          <span className="text-sm text-[#777777]">Thinking...</span>
+                      <div className="bg-[#1b1b1b] border border-[#333] rounded-2xl px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            <motion.div
+                              className="w-2 h-2 bg-[#b9955a] rounded-full"
+                              animate={{ y: [0, -6, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                            />
+                            <motion.div
+                              className="w-2 h-2 bg-[#b9955a] rounded-full"
+                              animate={{ y: [0, -6, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                            />
+                            <motion.div
+                              className="w-2 h-2 bg-[#b9955a] rounded-full"
+                              animate={{ y: [0, -6, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                            />
+                          </div>
+                          <span className="text-sm text-[#888]">Working the position...</span>
                         </div>
                       </div>
                     </motion.div>
@@ -227,14 +273,14 @@ export default function BJJChatbot() {
 
                 {/* Suggested Questions */}
                 {messages.length <= 2 && (
-                  <div className="px-4 pb-2">
-                    <p className="text-xs text-[#777777] mb-2">Try asking:</p>
+                  <div className="px-4 pb-3">
+                    <p className="text-xs text-[#666] mb-2 uppercase tracking-wide">Quick questions</p>
                     <div className="flex flex-wrap gap-2">
-                      {SUGGESTED_QUESTIONS.slice(0, 3).map((question, idx) => (
+                      {SUGGESTED_QUESTIONS.map((question, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleSuggestionClick(question)}
-                          className="px-3 py-1.5 bg-[#1b1b1b] border border-[#303030] rounded-full text-xs text-[#b9b9b9] hover:border-[#b9955a] hover:text-white transition-colors"
+                          className="px-3 py-1.5 bg-[#1b1b1b] border border-[#333] rounded-full text-xs text-[#aaa] hover:border-[#b9955a] hover:text-white hover:bg-[#222] transition-all duration-200"
                         >
                           {question}
                         </button>
@@ -244,23 +290,23 @@ export default function BJJChatbot() {
                 )}
 
                 {/* Input */}
-                <form onSubmit={handleSubmit} className="p-4 border-t border-[#303030]">
-                  <div className="flex gap-2">
+                <form onSubmit={handleSubmit} className="p-4 border-t border-[#333] bg-[#111]">
+                  <div className="flex gap-3">
                     <input
                       ref={inputRef}
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask about any technique..."
-                      className="flex-1 bg-[#1b1b1b] border border-[#303030] rounded-xl px-4 py-3 text-sm text-white placeholder-[#777777] focus:outline-none focus:border-[#b9955a] transition-colors"
+                      placeholder="Ask me anything about BJJ..."
+                      className="flex-1 bg-[#1b1b1b] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-[#666] focus:outline-none focus:border-[#b9955a] focus:ring-1 focus:ring-[#b9955a]/50 transition-all"
                       disabled={isLoading}
                     />
                     <button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                      className="px-4 py-3 bg-[#b9955a] text-[#0a0a0a] rounded-xl font-medium hover:bg-[#d4af6a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-3 bg-gradient-to-r from-[#b9955a] to-[#d4a85a] text-[#0a0a0a] rounded-xl font-semibold hover:from-[#c9a56a] hover:to-[#e4b86a] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-5 h-5" />
                     </button>
                   </div>
                 </form>
