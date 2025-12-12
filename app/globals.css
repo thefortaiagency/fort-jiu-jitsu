@@ -2,9 +2,9 @@
 @import "tailwindcss";
 
 :root {
-  /* Fort Wrestling Color Palette - Black, White, Grays */
-  --background: #ffffff;
-  --foreground: #1b1b1b;
+  /* Fort Wrestling Color Palette - Dark Mode Forced */
+  --background: #0a0a0a;
+  --foreground: #f9f9f9;
   --gray-50: #f9f9f9;
   --gray-100: #e2e2e2;
   --gray-200: #b9b9b9;
@@ -22,13 +22,6 @@
   --color-foreground: var(--foreground);
   --font-sans: 'Karla', sans-serif;
   --font-serif: 'Old Standard TT', serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #f9f9f9;
-  }
 }
 
 body {
