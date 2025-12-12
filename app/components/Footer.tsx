@@ -54,10 +54,26 @@ export default function Footer() {
           <div>
             <h4 className="font-serif text-lg font-bold mb-6">Programs</h4>
             <ul className="space-y-3">
-              <li className="text-[#777777]">Kids Gi Classes</li>
-              <li className="text-[#777777]">Adult Gi Classes</li>
-              <li className="text-[#777777]">Morning Rolls</li>
-              <li className="text-[#777777]">Private Training</li>
+              <li>
+                <Link href="/schedule#kids-classes" className="text-[#777777] hover:text-white transition-colors">
+                  Kids Gi Classes
+                </Link>
+              </li>
+              <li>
+                <Link href="/schedule#adult-classes" className="text-[#777777] hover:text-white transition-colors">
+                  Adult Gi Classes
+                </Link>
+              </li>
+              <li>
+                <Link href="/schedule#morning-rolls" className="text-[#777777] hover:text-white transition-colors">
+                  Morning Rolls
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-[#777777] hover:text-white transition-colors">
+                  Private Training
+                </Link>
+              </li>
             </ul>
           </div>
 

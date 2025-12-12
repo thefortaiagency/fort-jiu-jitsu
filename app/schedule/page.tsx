@@ -114,7 +114,7 @@ export default function SchedulePage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Morning Rolls - Included */}
             <ScaleIn>
-              <div className="relative h-full p-8 bg-gradient-to-br from-[#1b1b1b] to-[#303030] rounded-3xl text-white overflow-hidden">
+              <div id="morning-rolls" className="relative h-full p-8 bg-gradient-to-br from-[#1b1b1b] to-[#303030] rounded-3xl text-white overflow-hidden scroll-mt-32">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="relative">
                   <Sunrise className="w-12 h-12 mb-6 text-[#b9b9b9]" />
@@ -142,7 +142,7 @@ export default function SchedulePage() {
 
             {/* Kids Program */}
             <ScaleIn delay={0.1}>
-              <div className="h-full p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border-2 border-[#e2e2e2] dark:border-[#303030]">
+              <div id="kids-classes" className="h-full p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border-2 border-[#e2e2e2] dark:border-[#303030] scroll-mt-32">
                 <Users className="w-12 h-12 mb-6 text-[#5e5e5e] dark:text-[#b9b9b9]" />
                 <h3 className="font-serif text-2xl font-bold text-[#1b1b1b] dark:text-white mb-2">
                   Kids Gi Classes
@@ -180,7 +180,7 @@ export default function SchedulePage() {
 
             {/* Adult Program */}
             <ScaleIn delay={0.2}>
-              <div className="h-full p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border-2 border-[#1b1b1b] dark:border-white relative">
+              <div id="adult-classes" className="h-full p-8 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-3xl border-2 border-[#1b1b1b] dark:border-white relative scroll-mt-32">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] text-sm font-medium rounded-full">
                   Most Popular
                 </div>
