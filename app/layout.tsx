@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { LocalBusinessJsonLd, CourseJsonLd } from "./components/JsonLd";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
+import BJJChatbot from "./components/BJJChatbot";
 
 const siteUrl = "https://thefortjiujitsu.com";
 
@@ -107,6 +108,7 @@ export default function RootLayout({
         <CourseJsonLd />
         <ServiceWorkerRegistration />
         {children}
+        <BJJChatbot />
       </body>
     </html>
   );
