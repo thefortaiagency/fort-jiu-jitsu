@@ -34,6 +34,11 @@ export const STRIPE_PRODUCTS: Record<string, StripeProduct> = {
     productId: 'prod_TZsEoSTBkNwcpf',
     oneTimePriceId: 'price_1SciTZASerE5d23FpjQ8ozhJ', // $20 one-time
   },
+  MORNING_ROLLS: {
+    productId: 'prod_morning_rolls', // Will be created in Stripe
+    monthlyPriceId: 'price_morning_rolls_monthly', // $60/month - Will be created in Stripe
+    oneTimePriceId: 'price_morning_rolls_dropin', // $20 one-time - Will be created in Stripe
+  },
 };
 
 export const STRIPE_COUPONS = {
@@ -44,7 +49,7 @@ export const STRIPE_COUPONS = {
 
 // Helper function to get price ID by membership type and interval
 export function getPriceId(
-  membershipType: 'kids-bjj' | 'adult-bjj' | 'family' | 'drop-in',
+  membershipType: 'kids-bjj' | 'adult-bjj' | 'family' | 'drop-in' | 'morning-rolls',
   interval: 'monthly' | 'annual' | 'one-time' = 'monthly'
 ): string {
   switch (membershipType) {
@@ -64,6 +69,11 @@ export function getPriceId(
     case 'drop-in':
       return STRIPE_PRODUCTS.DROP_IN.oneTimePriceId!;
 
+    case 'morning-rolls':
+      return interval === 'one-time'
+        ? STRIPE_PRODUCTS.MORNING_ROLLS.oneTimePriceId!
+        : STRIPE_PRODUCTS.MORNING_ROLLS.monthlyPriceId!;
+
     default:
       throw new Error(`Unknown membership type: ${membershipType}`);
   }
@@ -71,7 +81,7 @@ export function getPriceId(
 
 // Helper function to get product ID by membership type
 export function getProductId(
-  membershipType: 'kids-bjj' | 'adult-bjj' | 'family' | 'drop-in'
+  membershipType: 'kids-bjj' | 'adult-bjj' | 'family' | 'drop-in' | 'morning-rolls'
 ): string {
   switch (membershipType) {
     case 'kids-bjj':
@@ -82,6 +92,8 @@ export function getProductId(
       return STRIPE_PRODUCTS.FAMILY_PLAN.productId;
     case 'drop-in':
       return STRIPE_PRODUCTS.DROP_IN.productId;
+    case 'morning-rolls':
+      return STRIPE_PRODUCTS.MORNING_ROLLS.productId;
     default:
       throw new Error(`Unknown membership type: ${membershipType}`);
   }
@@ -126,6 +138,18 @@ export const PRICING_DISPLAY = {
       amount: 20,
       display: '$20',
       description: 'Single class • No commitment',
+    },
+  },
+  MORNING_ROLLS: {
+    monthly: {
+      amount: 60,
+      display: '$60/month',
+      description: 'Morning open mat only • No evening classes',
+    },
+    oneTime: {
+      amount: 20,
+      display: '$20',
+      description: 'Single morning roll session',
     },
   },
 };

@@ -1,17 +1,21 @@
 import { redirect } from 'next/navigation';
 import { createServerAuthClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase';
 import WaiverManagement from './WaiverManagement';
 
 export default async function WaiversPage() {
-  const supabase = await createServerAuthClient();
-
+  // Use auth client for user verification
+  const authClient = await createServerAuthClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await authClient.auth.getUser();
 
   if (!user) {
     redirect('/admin/login');
   }
+
+  // Use service role client for data fetching (bypasses RLS)
+  const supabase = createServerSupabaseClient();
 
   // Fetch initial data for server-side rendering
   const { data: membersData } = await supabase

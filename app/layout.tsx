@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { LocalBusinessJsonLd, CourseJsonLd } from "./components/JsonLd";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 
 const siteUrl = "https://thefortjiujitsu.com";
 
@@ -104,6 +105,7 @@ export default function RootLayout({
       <body className="antialiased bg-white dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-[#f9f9f9]">
         <LocalBusinessJsonLd />
         <CourseJsonLd />
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

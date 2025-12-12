@@ -12,16 +12,20 @@ import {
   CheckCircle,
   Phone,
   Clock,
-  Calendar
+  Calendar,
+  Sun,
+  Moon
 } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 
 type VisitorType = 'returning' | 'new' | null;
+type ClassType = 'evening' | 'morning' | null;
 
 export default function DropInPage() {
   const [visitorType, setVisitorType] = useState<VisitorType>(null);
+  const [classType, setClassType] = useState<ClassType>(null);
   const [dropInForm, setDropInForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +41,10 @@ export default function DropInPage() {
       const res = await fetch('/api/drop-in/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dropInForm),
+        body: JSON.stringify({
+          ...dropInForm,
+          classType: classType || 'evening',
+        }),
       });
 
       const data = await res.json();
@@ -98,34 +105,133 @@ export default function DropInPage() {
             </p>
           </div>
 
-          {/* Class Info Cards */}
-          <div className="grid md:grid-cols-3 gap-4 mb-12">
-            <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030] p-6 text-center">
-              <Calendar className="w-8 h-8 text-[#5e5e5e] dark:text-[#b9b9b9] mx-auto mb-3" />
-              <p className="font-medium text-[#1b1b1b] dark:text-white">Tue & Wed</p>
-              <p className="text-sm text-[#777777]">Evening Classes</p>
-            </div>
-            <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030] p-6 text-center">
-              <Clock className="w-8 h-8 text-[#5e5e5e] dark:text-[#b9b9b9] mx-auto mb-3" />
-              <p className="font-medium text-[#1b1b1b] dark:text-white">Kids: 5:30-6:30pm</p>
-              <p className="text-sm text-[#777777]">Adults: 6:30-8:00pm</p>
-            </div>
-            <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030] p-6 text-center">
-              <DollarSign className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-3" />
-              <p className="font-medium text-[#1b1b1b] dark:text-white">$20 / class</p>
-              <p className="text-sm text-[#777777]">Pay online or in person</p>
-            </div>
-          </div>
-
-          {/* Visitor Type Selection */}
+          {/* Class Type Selection */}
           <AnimatePresence mode="wait">
-            {!visitorType && (
+            {!classType && !visitorType && (
               <motion.div
-                key="selection"
+                key="class-selection"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-12"
+              >
+                <h2 className="text-center text-xl font-medium text-[#1b1b1b] dark:text-white mb-6">
+                  What would you like to drop in for?
+                </h2>
+                <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                  {/* Evening Classes */}
+                  <motion.button
+                    onClick={() => setClassType('evening')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group p-8 bg-white dark:bg-[#1b1b1b] rounded-3xl border-2 border-[#e2e2e2] dark:border-[#303030] hover:border-blue-500 dark:hover:border-blue-500 transition-all text-left"
+                  >
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Moon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="font-serif text-2xl font-bold text-[#1b1b1b] dark:text-white mb-2">
+                      Evening Classes
+                    </h3>
+                    <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-4">
+                      Tue & Wed nights - structured instruction for kids and adults
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#777777]">Kids: 5:30-6:30pm</p>
+                        <p className="text-sm text-[#777777]">Adults: 6:30-8:00pm</p>
+                      </div>
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">$20</span>
+                    </div>
+                    <span className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium mt-4 group-hover:gap-3 transition-all">
+                      Select <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </motion.button>
+
+                  {/* Morning Rolls */}
+                  <motion.button
+                    onClick={() => setClassType('morning')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group p-8 bg-white dark:bg-[#1b1b1b] rounded-3xl border-2 border-[#e2e2e2] dark:border-[#303030] hover:border-orange-500 dark:hover:border-orange-500 transition-all text-left"
+                  >
+                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Sun className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <h3 className="font-serif text-2xl font-bold text-[#1b1b1b] dark:text-white mb-2">
+                      Morning Rolls
+                    </h3>
+                    <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-4">
+                      Open mat session - roll with training partners at your own pace
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#777777]">Morning open mat</p>
+                        <p className="text-sm text-[#777777]">All skill levels</p>
+                      </div>
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">$20</span>
+                    </div>
+                    <span className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 font-medium mt-4 group-hover:gap-3 transition-all">
+                      Select <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </motion.button>
+                </div>
+
+                {/* Morning Rolls Monthly Option */}
+                <div className="mt-8 max-w-3xl mx-auto">
+                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-2xl border border-orange-200 dark:border-orange-800 p-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <Sun className="w-10 h-10 text-orange-500" />
+                        <div>
+                          <h4 className="font-bold text-[#1b1b1b] dark:text-white">Morning Rolls Only Membership</h4>
+                          <p className="text-sm text-[#5e5e5e] dark:text-[#b9b9b9]">Unlimited morning open mat sessions</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-2xl font-bold text-[#1b1b1b] dark:text-white">$60<span className="text-sm font-normal text-[#777777]">/month</span></span>
+                        <Link
+                          href="/signup?plan=morning-rolls"
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-medium transition-colors"
+                        >
+                          Subscribe
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Visitor Type Selection - shows after class type selected */}
+            {classType && !visitorType && (
+              <motion.div
+                key="visitor-selection"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
+                <button
+                  onClick={() => setClassType(null)}
+                  className="text-[#5e5e5e] dark:text-[#b9b9b9] hover:text-[#1b1b1b] dark:hover:text-white mb-6 flex items-center gap-2"
+                >
+                  <ArrowRight className="w-4 h-4 rotate-180" /> Back to class selection
+                </button>
+
+                {/* Selected class info */}
+                <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl border border-[#e2e2e2] dark:border-[#303030] p-4 mb-8 flex items-center gap-4">
+                  {classType === 'morning' ? (
+                    <Sun className="w-8 h-8 text-orange-500" />
+                  ) : (
+                    <Moon className="w-8 h-8 text-blue-500" />
+                  )}
+                  <div>
+                    <p className="font-medium text-[#1b1b1b] dark:text-white">
+                      {classType === 'morning' ? 'Morning Rolls' : 'Evening Class'} Drop-in
+                    </p>
+                    <p className="text-sm text-[#777777]">$20 single session</p>
+                  </div>
+                </div>
+
                 <h2 className="text-center text-xl font-medium text-[#1b1b1b] dark:text-white mb-6">
                   Have you trained at The Fort before?
                 </h2>

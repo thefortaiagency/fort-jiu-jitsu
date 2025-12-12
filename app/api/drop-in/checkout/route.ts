@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone } = body;
+    const { firstName, lastName, email, phone, classType = 'evening' } = body;
 
     if (!firstName || !lastName || !email) {
       return NextResponse.json(
@@ -92,6 +92,13 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://thefortjiujitsu.com';
 
+    // Determine product name and description based on class type
+    const isMorningRolls = classType === 'morning';
+    const productName = isMorningRolls ? 'Morning Rolls Drop-in' : 'Drop-in Class';
+    const productDescription = isMorningRolls
+      ? 'Single morning open mat session at The Fort Jiu-Jitsu'
+      : 'Single class visit at The Fort Jiu-Jitsu';
+
     // Create checkout session for drop-in
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
@@ -103,19 +110,20 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             unit_amount: 2000, // $20.00
             product_data: {
-              name: 'Drop-in Class',
-              description: 'Single class visit at The Fort Jiu-Jitsu',
+              name: productName,
+              description: productDescription,
               images: [`${baseUrl}/jiu-jitsu.png`],
             },
           },
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/check-in/success?drop_in=true&name=${encodeURIComponent(firstName)}`,
-      cancel_url: `${baseUrl}/check-in?drop_in=cancelled`,
+      success_url: `${baseUrl}/check-in/success?drop_in=true&name=${encodeURIComponent(firstName)}&class_type=${classType}`,
+      cancel_url: `${baseUrl}/drop-in?cancelled=true`,
       metadata: {
         member_id: memberId || '',
-        payment_type: 'drop-in',
+        payment_type: isMorningRolls ? 'morning-rolls-drop-in' : 'drop-in',
+        class_type: classType,
         visitor_name: `${firstName} ${lastName}`,
         visitor_email: email,
       },

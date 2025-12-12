@@ -1,11 +1,11 @@
 {
   "name": "The Fort Jiu-Jitsu",
-  "short_name": "The Fort BJJ",
+  "short_name": "Fort BJJ",
   "description": "Fort Wayne's premier Brazilian Jiu-Jitsu academy. Expert instruction for kids & adults.",
-  "start_url": "/",
+  "start_url": "/member",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#0a0a0a",
+  "theme_color": "#1b1b1b",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -33,5 +33,35 @@
   ],
   "categories": ["sports", "fitness", "education"],
   "lang": "en-US",
-  "dir": "ltr"
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Check In",
+      "short_name": "Check In",
+      "description": "Check in to today's class",
+      "url": "/check-in",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Drop-in",
+      "short_name": "Drop-in",
+      "description": "Pay for a single class",
+      "url": "/drop-in",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Schedule",
+      "short_name": "Schedule",
+      "description": "View class schedule",
+      "url": "/schedule",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Member Portal",
+      "short_name": "Portal",
+      "description": "Access your account",
+      "url": "/member",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }

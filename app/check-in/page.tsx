@@ -3,16 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
   CheckCircle,
   XCircle,
-  User,
-  Users,
   QrCode,
   Camera,
   Keyboard,
-  Sparkles,
-  Shield,
   DollarSign,
   CreditCard,
   FileSignature,
@@ -36,14 +31,11 @@ interface CheckInResult {
   message: string;
 }
 
-export default function CheckInKiosk() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+export default function PersonalCheckIn() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'dropdown' | 'scan' | 'manual' | 'dropin' | 'waiver'>('dropdown');
+  const [mode, setMode] = useState<'scan' | 'manual' | 'dropin' | 'waiver'>('scan');
   const [dropInForm, setDropInForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [isProcessingDropIn, setIsProcessingDropIn] = useState(false);
   const [waiverForm, setWaiverForm] = useState({
@@ -59,19 +51,11 @@ export default function CheckInKiosk() {
   const [isProcessingWaiver, setIsProcessingWaiver] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [recentCheckIns, setRecentCheckIns] = useState<Member[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [todayCount, setTodayCount] = useState(0);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
-
-  // Load members on mount
-  useEffect(() => {
-    loadMembers();
-    loadRecentCheckIns();
-  }, []);
 
   // Focus manual input when in manual mode
   useEffect(() => {
@@ -82,8 +66,20 @@ export default function CheckInKiosk() {
 
   // Handle camera scanning
   const startScanner = useCallback(async () => {
-    if (!scannerContainerRef.current || isScanning) return;
+    console.log('startScanner called');
 
+    if (scannerRef.current) {
+      console.log('Scanner already exists, skipping');
+      return;
+    }
+
+    const container = document.getElementById('qr-reader');
+    if (!container) {
+      console.log('Container qr-reader not found');
+      return;
+    }
+
+    console.log('Starting scanner...');
     setCameraError(null);
 
     try {
@@ -99,126 +95,73 @@ export default function CheckInKiosk() {
         },
         async (decodedText) => {
           console.log('Scanned:', decodedText);
+          if (scannerRef.current) {
+            try {
+              await scannerRef.current.stop();
+              scannerRef.current = null;
+            } catch (e) {
+              console.error('Error stopping after scan:', e);
+            }
+          }
+          setIsScanning(false);
           await handleScannedCode(decodedText);
         },
-        (errorMessage) => {
-          console.debug('Scan attempt:', errorMessage);
-        }
+        () => {}
       );
 
+      console.log('Scanner started successfully');
       setIsScanning(true);
     } catch (err) {
       console.error('Camera error:', err);
+      scannerRef.current = null;
       setCameraError(
         err instanceof Error
           ? err.message
           : 'Failed to access camera. Please allow camera permissions or use manual entry.'
       );
     }
-  }, [isScanning]);
+  }, []);
 
   const stopScanner = useCallback(async () => {
-    if (scannerRef.current && isScanning) {
+    console.log('stopScanner called, ref exists:', !!scannerRef.current);
+    if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
-        scannerRef.current = null;
-        setIsScanning(false);
+        console.log('Scanner stopped successfully');
       } catch (err) {
         console.error('Error stopping scanner:', err);
+      } finally {
+        scannerRef.current = null;
+        setIsScanning(false);
       }
     }
-  }, [isScanning]);
+  }, []);
 
   // Start/stop scanner based on mode
   useEffect(() => {
+    console.log('Mode changed to:', mode);
     if (mode === 'scan') {
       const timer = setTimeout(() => {
+        console.log('Timer fired, calling startScanner');
         startScanner();
-      }, 100);
-      return () => clearTimeout(timer);
+      }, 500);
+      return () => {
+        console.log('Cleanup: clearing timer and stopping scanner');
+        clearTimeout(timer);
+        stopScanner();
+      };
     } else {
       stopScanner();
     }
-
-    return () => {
-      stopScanner();
-    };
   }, [mode, startScanner, stopScanner]);
 
-  async function loadMembers() {
-    try {
-      const res = await fetch('/api/members');
-      const data = await res.json();
-      setMembers(data.members || []);
-    } catch (error) {
-      console.error('Failed to load members:', error);
-    }
-  }
-
-  async function loadRecentCheckIns() {
-    try {
-      const res = await fetch('/api/check-ins/recent?limit=5');
-      const data = await res.json();
-      setRecentCheckIns(data.checkIns || []);
-      setTodayCount(data.todayCount || data.checkIns?.length || 0);
-    } catch (error) {
-      console.error('Failed to load recent check-ins:', error);
-    }
-  }
-
-  async function handleCheckIn(member: Member) {
-    setIsLoading(true);
-    setCheckInResult(null);
-
-    try {
-      const res = await fetch('/api/check-ins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          member_id: member.id,
-          check_in_method: mode === 'dropdown' ? 'kiosk' : 'barcode',
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        // Get monthly count for the member
-        const monthlyRes = await fetch(`/api/check-in?memberId=${member.id}`);
-        const monthlyData = await monthlyRes.json();
-        const monthlyCount = monthlyData.thisMonthCount || 1;
-
-        // Redirect to success page with member info
-        window.location.href = `/check-in/success?name=${encodeURIComponent(member.first_name)}&count=${monthlyCount}`;
-      } else {
-        setCheckInResult({
-          success: false,
-          member,
-          message: data.error || 'Check-in failed',
-        });
-      }
-    } catch (error) {
-      setCheckInResult({
-        success: false,
-        member,
-        message: 'Network error. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedMember(null);
-      setSearchQuery('');
-      setBarcodeInput('');
-
-      setTimeout(() => {
-        setCheckInResult(null);
-      }, 4000);
-    }
-  }
-
   async function handleScannedCode(code: string) {
-    if (isLoading) return;
+    console.log('handleScannedCode called with:', code);
+    if (isLoading) {
+      console.log('Already loading, skipping');
+      return;
+    }
 
-    await stopScanner();
     setIsLoading(true);
 
     try {
@@ -230,7 +173,7 @@ export default function CheckInKiosk() {
       } else {
         setCheckInResult({
           success: false,
-          message: 'Member not found. Please try again.',
+          message: 'Member not found. Please try again or ask staff for help.',
         });
         setTimeout(() => {
           setCheckInResult(null);
@@ -255,6 +198,51 @@ export default function CheckInKiosk() {
     }
   }
 
+  async function handleCheckIn(member: Member) {
+    setIsLoading(true);
+    setCheckInResult(null);
+
+    try {
+      const res = await fetch('/api/check-ins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_id: member.id,
+          check_in_method: mode === 'scan' ? 'qr_scan' : 'manual',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const monthlyRes = await fetch(`/api/check-in?memberId=${member.id}`);
+        const monthlyData = await monthlyRes.json();
+        const monthlyCount = monthlyData.thisMonthCount || 1;
+
+        window.location.href = `/check-in/success?name=${encodeURIComponent(member.first_name)}&count=${monthlyCount}`;
+      } else {
+        setCheckInResult({
+          success: false,
+          member,
+          message: data.error || 'Check-in failed',
+        });
+      }
+    } catch (error) {
+      setCheckInResult({
+        success: false,
+        member,
+        message: 'Network error. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+      setBarcodeInput('');
+
+      setTimeout(() => {
+        setCheckInResult(null);
+      }, 4000);
+    }
+  }
+
   async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!barcodeInput.trim()) return;
@@ -262,34 +250,6 @@ export default function CheckInKiosk() {
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
   }
-
-  const filteredMembers = members.filter((m) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      m.first_name.toLowerCase().includes(query) ||
-      m.last_name.toLowerCase().includes(query) ||
-      m.email.toLowerCase().includes(query)
-    );
-  });
-
-  const activeMembers = filteredMembers.filter((m) => m.status === 'active');
-
-  const getProgramColor = (program: string) => {
-    const p = program?.toLowerCase() || '';
-    if (p.includes('kids') || p.includes('youth')) return 'from-sky-600 to-sky-800';
-    if (p.includes('adult')) return 'from-slate-600 to-slate-800';
-    if (p.includes('comp') || p.includes('competition')) return 'from-amber-600 to-amber-800';
-    if (p.includes('women')) return 'from-rose-500 to-rose-700';
-    return 'from-zinc-600 to-zinc-800';
-  };
-
-  const getProgramIcon = (program: string) => {
-    const p = program?.toLowerCase() || '';
-    if (p.includes('kids') || p.includes('youth')) return Sparkles;
-    if (p.includes('comp') || p.includes('competition')) return Shield;
-    return User;
-  };
 
   const handleDropInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -444,7 +404,6 @@ export default function CheckInKiosk() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Redirect to success page for first-time waiver signers
         window.location.href = `/check-in/success?name=${encodeURIComponent(data.member.firstName)}&count=1`;
       } else {
         setCheckInResult({
@@ -465,8 +424,7 @@ export default function CheckInKiosk() {
   };
 
   const modeButtons = [
-    { id: 'dropdown' as const, label: 'Find Name', icon: Users, desc: 'Search members' },
-    { id: 'scan' as const, label: 'Scan Code', icon: Camera, desc: 'Use camera' },
+    { id: 'scan' as const, label: 'Scan QR', icon: Camera, desc: 'Use camera' },
     { id: 'manual' as const, label: 'Type Code', icon: Keyboard, desc: 'Enter manually' },
     { id: 'dropin' as const, label: 'Drop-in', icon: DollarSign, desc: '$20 visitor' },
     { id: 'waiver' as const, label: 'Sign Waiver', icon: FileSignature, desc: 'First time' },
@@ -490,25 +448,17 @@ export default function CheckInKiosk() {
       {/* Header with Logo */}
       <header className="bg-black/50 backdrop-blur-lg border-b border-gray-800/50 px-4 py-4 md:py-6 sticky top-0 z-40 relative">
         <div className="max-w-5xl mx-auto">
-          {/* Top row - Member Check-In label */}
-          <p className="text-center text-gray-400 text-sm md:text-base mb-3">Member Check-In</p>
+          <p className="text-center text-gray-400 text-sm md:text-base mb-3">Personal Check-In</p>
 
-          {/* Main row - Logo and Stats */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center">
             <div className="relative w-40 h-12 md:w-56 md:h-16">
               <Image
                 src="/jiu-jitsu.png"
                 alt="The Fort Jiu-Jitsu"
                 fill
-                className="object-contain object-left invert"
+                className="object-contain invert"
                 priority
               />
-            </div>
-
-            {/* Stats Badge */}
-            <div className="bg-gradient-to-r from-green-900/50 to-green-800/50 border border-green-700/50 rounded-2xl px-4 py-2 md:px-6 md:py-3">
-              <p className="text-3xl md:text-4xl font-bold text-green-400">{todayCount}</p>
-              <p className="text-xs md:text-sm text-green-300/70">Today</p>
             </div>
           </div>
         </div>
@@ -564,7 +514,7 @@ export default function CheckInKiosk() {
         </AnimatePresence>
 
         {/* Mode Selection Cards */}
-        <div className="grid grid-cols-5 gap-2 md:gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-2 md:gap-4 mb-8">
           {modeButtons.map((btn) => (
             <motion.button
               key={btn.id}
@@ -628,7 +578,7 @@ export default function CheckInKiosk() {
                   <>
                     <div className="text-center mb-6">
                       <p className="text-xl md:text-2xl text-gray-300">
-                        Point camera at your <span className="text-white font-bold">QR code</span> or <span className="text-white font-bold">barcode</span>
+                        Scan your <span className="text-white font-bold">QR code</span> from the Member Portal
                       </p>
                     </div>
                     <div
@@ -650,6 +600,14 @@ export default function CheckInKiosk() {
                   </>
                 )}
               </div>
+
+              {/* Help text */}
+              <div className="mt-6 text-center">
+                <p className="text-gray-500 text-sm mb-2">Don&apos;t have your QR code?</p>
+                <Link href="/member" className="text-white/70 hover:text-white underline text-sm">
+                  Log in to Member Portal to get it
+                </Link>
+              </div>
             </motion.div>
           )}
 
@@ -666,7 +624,7 @@ export default function CheckInKiosk() {
                 <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-3xl p-8 md:p-12 text-center">
                   <QrCode className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-6 text-gray-600" />
                   <p className="text-xl md:text-2xl text-gray-300 mb-8">
-                    Enter your <span className="text-white font-bold">member ID</span>, <span className="text-white font-bold">last 4 of phone</span>, or <span className="text-white font-bold">name</span>
+                    Enter your <span className="text-white font-bold">member ID</span> or <span className="text-white font-bold">last 4 digits of phone</span>
                   </p>
                   <input
                     ref={barcodeInputRef}
@@ -983,179 +941,7 @@ export default function CheckInKiosk() {
               </form>
             </motion.div>
           )}
-
-          {/* Dropdown Mode */}
-          {mode === 'dropdown' && (
-            <motion.div
-              key="dropdown"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-8"
-            >
-              {/* Search */}
-              <div className="relative mb-6">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 md:w-7 md:h-7 text-gray-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name..."
-                  className="w-full bg-gray-900/80 border-2 border-gray-800 rounded-2xl pl-14 md:pl-16 pr-6 py-5 md:py-6 text-xl md:text-2xl focus:ring-4 focus:ring-white/20 focus:border-gray-600 transition-all"
-                  autoComplete="off"
-                />
-              </div>
-
-              {/* Member Selection Confirmation */}
-              <AnimatePresence>
-                {selectedMember && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className={`bg-gradient-to-br ${getProgramColor(selectedMember.program)} rounded-3xl p-6 md:p-8 mb-6 border-2 border-white/20`}
-                  >
-                    <div className="flex items-center gap-4 md:gap-6 mb-6">
-                      <div className="w-20 h-20 md:w-24 md:h-24 bg-white/20 rounded-full flex items-center justify-center">
-                        <User className="w-10 h-10 md:w-12 md:h-12 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h2 className="text-2xl md:text-4xl font-bold text-white">
-                          {selectedMember.first_name} {selectedMember.last_name}
-                        </h2>
-                        <p className="text-lg md:text-xl text-white/80 capitalize">
-                          {selectedMember.program?.replace('-', ' ')} Program
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <motion.button
-                        onClick={() => handleCheckIn(selectedMember)}
-                        disabled={isLoading}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex-1 bg-white text-black font-bold py-5 md:py-6 rounded-2xl text-xl md:text-2xl hover:bg-gray-100 transition-colors disabled:opacity-50 shadow-xl"
-                      >
-                        {isLoading ? (
-                          <span className="flex items-center justify-center gap-3">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                              className="w-6 h-6 border-3 border-gray-400 border-t-black rounded-full"
-                            />
-                            Checking in...
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center gap-3">
-                            <CheckCircle className="w-7 h-7" />
-                            Confirm Check-In
-                          </span>
-                        )}
-                      </motion.button>
-                      <button
-                        onClick={() => setSelectedMember(null)}
-                        className="px-6 md:px-8 py-5 md:py-6 bg-black/30 border-2 border-white/30 rounded-2xl hover:bg-black/50 transition-colors text-lg font-medium"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Member Cards Grid */}
-              {!selectedMember && (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden">
-                  {activeMembers.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
-                      <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-xl">
-                        {searchQuery
-                          ? 'No members found matching your search'
-                          : 'No active members'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="max-h-[50vh] md:max-h-[55vh] overflow-y-auto p-3 md:p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                        {activeMembers.map((member) => {
-                          const ProgramIcon = getProgramIcon(member.program);
-                          return (
-                            <motion.button
-                              key={member.id}
-                              onClick={() => setSelectedMember(member)}
-                              whileTap={{ scale: 0.98 }}
-                              className={`w-full p-4 md:p-6 flex items-center gap-4 bg-gradient-to-r ${getProgramColor(member.program)} rounded-2xl border border-white/10 hover:border-white/30 transition-all text-left group`}
-                            >
-                              <div className="w-14 h-14 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
-                                <ProgramIcon className="w-7 h-7 md:w-8 md:h-8 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-lg md:text-xl font-bold text-white truncate">
-                                  {member.first_name} {member.last_name}
-                                </p>
-                                <p className="text-sm md:text-base text-white/70 truncate capitalize">
-                                  {member.program?.replace('-', ' ')}
-                                </p>
-                              </div>
-                              <CheckCircle className="w-8 h-8 text-white/50 group-hover:text-white transition-colors flex-shrink-0" />
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          )}
         </AnimatePresence>
-
-        {/* Recent Check-ins */}
-        {recentCheckIns.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-8"
-          >
-            <h3 className="text-lg md:text-xl font-medium text-gray-400 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              Recent Check-ins
-            </h3>
-            <div className="flex flex-wrap gap-2 md:gap-3">
-              {recentCheckIns.map((member, index) => (
-                <motion.div
-                  key={`${member.id}-${index}`}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-gradient-to-r from-green-900/30 to-green-800/30 border border-green-700/50 rounded-full px-4 py-2 md:px-5 md:py-3 flex items-center gap-2 md:gap-3"
-                >
-                  <div className="w-8 h-8 md:w-10 md:h-10 bg-green-800/50 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
-                  </div>
-                  <span className="text-sm md:text-base font-medium text-green-300">
-                    {member.first_name} {member.last_name?.charAt(0) || ''}.
-                  </span>
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Quick Stats */}
-        <div className="mt-10 grid grid-cols-2 gap-4 md:gap-6">
-          <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 border border-green-800/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
-            <p className="text-4xl md:text-6xl font-bold text-green-400">
-              {todayCount}
-            </p>
-            <p className="text-gray-400 mt-2 text-sm md:text-base">Today&apos;s Check-ins</p>
-          </div>
-          <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl md:rounded-3xl p-6 md:p-8 text-center">
-            <p className="text-4xl md:text-6xl font-bold text-white">{activeMembers.length}</p>
-            <p className="text-gray-400 mt-2 text-sm md:text-base">Active Members</p>
-          </div>
-        </div>
       </main>
 
       {/* Footer */}
@@ -1172,7 +958,7 @@ export default function CheckInKiosk() {
             </div>
             <span>The Fort Jiu-Jitsu</span>
           </div>
-          <span className="text-gray-600">Tap your name or scan your code</span>
+          <span className="text-gray-600">Scan QR or enter your code</span>
         </div>
       </footer>
     </div>

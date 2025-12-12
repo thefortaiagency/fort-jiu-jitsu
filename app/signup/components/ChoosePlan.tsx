@@ -48,6 +48,21 @@ export default function ChoosePlan({ formData, onComplete, onBack }: ChoosePlanP
       popular: true,
     },
     {
+      id: 'morning-rolls' as MembershipPlan,
+      name: 'Morning Rolls Only',
+      monthlyPrice: 60,
+      annualPrice: 600,
+      description: 'Open mat sessions only',
+      features: [
+        'Morning open mat access',
+        'Roll at your own pace',
+        'No evening classes',
+        'Great for experienced grapplers',
+      ],
+      color: 'from-orange-500 to-orange-600',
+      popular: false,
+    },
+    {
       id: 'family' as MembershipPlan,
       name: 'Family Plan',
       monthlyPrice: 150,
@@ -212,7 +227,7 @@ export default function ChoosePlan({ formData, onComplete, onBack }: ChoosePlanP
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {plans.map((plan, index) => {
           const price = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.annualPrice;
           const savings = calculateSavings(plan.monthlyPrice, plan.annualPrice);

@@ -25,6 +25,7 @@ import {
   Ban,
   RefreshCw,
   DollarSign,
+  QrCode,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -131,6 +132,9 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
   const [isCancelling, setIsCancelling] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [checkInSuccess, setCheckInSuccess] = useState(false);
+  const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(false);
 
   useEffect(() => {
     loadMemberData();
@@ -296,6 +300,48 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
       setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
     } finally {
       setIsProcessingPayment(false);
+    }
+  };
+
+  const handleOneClickCheckIn = async () => {
+    if (!member || isCheckingIn) return;
+
+    setIsCheckingIn(true);
+    try {
+      const res = await fetch('/api/check-ins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_id: member.id,
+          check_in_method: 'one-tap',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setCheckInSuccess(true);
+        setThisMonthCheckIns(prev => prev + 1);
+        // Reload check-ins to show updated list
+        const checkInsRes = await fetch(`/api/member/${member.id}/check-ins`);
+        if (checkInsRes.ok) {
+          const checkInsData = await checkInsRes.json();
+          setCheckIns(checkInsData.checkIns || []);
+        }
+        // Reset success state after 5 seconds
+        setTimeout(() => setCheckInSuccess(false), 5000);
+      } else if (data.error?.includes('already checked in')) {
+        setAlreadyCheckedIn(true);
+        setTimeout(() => setAlreadyCheckedIn(false), 4000);
+      } else {
+        setSaveMessage({ type: 'error', text: data.error || 'Check-in failed. Please try again.' });
+        setTimeout(() => setSaveMessage(null), 4000);
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Network error. Please try again.' });
+      setTimeout(() => setSaveMessage(null), 4000);
+    } finally {
+      setIsCheckingIn(false);
     }
   };
 
@@ -630,6 +676,72 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
+            {/* One-Tap Check-In */}
+            {member.status === 'active' && (
+              <div className={`rounded-3xl p-6 border transition-all ${
+                checkInSuccess
+                  ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 border-green-300 dark:border-green-700'
+                  : alreadyCheckedIn
+                  ? 'bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-900/20 dark:to-sky-900/20 border-blue-200 dark:border-blue-800'
+                  : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800'
+              }`}>
+                {checkInSuccess ? (
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-center py-4"
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', bounce: 0.5 }}
+                    >
+                      <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-1">You're Checked In!</h3>
+                    <p className="text-green-600 dark:text-green-400">Have a great training session, {member.firstName}!</p>
+                  </motion.div>
+                ) : alreadyCheckedIn ? (
+                  <div className="text-center py-4">
+                    <CheckCircle className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-bold text-blue-800 dark:text-blue-200 mb-1">Already Checked In</h3>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm">You've already checked in today. Enjoy your training!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <motion.button
+                      onClick={handleOneClickCheckIn}
+                      disabled={isCheckingIn}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-10 py-5 rounded-2xl font-bold text-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                    >
+                      {isCheckingIn ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full"
+                          />
+                          Checking In...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-7 h-7" />
+                          Check In Now
+                        </>
+                      )}
+                    </motion.button>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="text-lg font-bold text-green-800 dark:text-green-200 mb-1">Ready to Train?</h3>
+                      <p className="text-green-700 dark:text-green-300 text-sm">
+                        One tap and you're in. No scanning needed!
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Status Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-[#1b1b1b] rounded-2xl p-6 border border-[#e2e2e2] dark:border-[#303030]">
@@ -1040,16 +1152,44 @@ export default function MemberDashboard({ email, onLogout }: MemberDashboardProp
             {/* QR Code */}
             {member.qrCode && (
               <div className="bg-white dark:bg-[#1b1b1b] rounded-3xl p-8 border border-[#e2e2e2] dark:border-[#303030]">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl">📱</span>
-                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Your Check-in Code</h2>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-[#f9f9f9] dark:bg-[#303030] flex items-center justify-center">
+                    <QrCode className="w-5 h-5 text-[#1b1b1b] dark:text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#1b1b1b] dark:text-white">Your Check-in QR Code</h2>
                 </div>
-                <p className="font-mono text-lg bg-[#f9f9f9] dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-white px-4 py-2 rounded-xl inline-block border border-[#e2e2e2] dark:border-[#303030]">
-                  {member.qrCode}
-                </p>
-                <p className="text-sm text-[#777777] mt-2">
-                  Use this code or scan your keychain tag at the kiosk to check in
-                </p>
+
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  {/* QR Code Image */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#e2e2e2] dark:border-[#303030] shadow-lg">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(member.qrCode)}&bgcolor=ffffff&color=1b1b1b`}
+                      alt="Your check-in QR code"
+                      width={200}
+                      height={200}
+                      className="rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex-1 text-center md:text-left">
+                    <p className="text-[#5e5e5e] dark:text-[#b9b9b9] mb-4">
+                      Show this QR code at the check-in kiosk or scan it with your phone when you arrive
+                    </p>
+                    <div className="mb-4">
+                      <p className="text-sm text-[#777777] mb-1">Your Code</p>
+                      <p className="font-mono text-xl bg-[#f9f9f9] dark:bg-[#0a0a0a] text-[#1b1b1b] dark:text-white px-4 py-2 rounded-xl inline-block border border-[#e2e2e2] dark:border-[#303030]">
+                        {member.qrCode}
+                      </p>
+                    </div>
+                    <Link
+                      href="/check-in"
+                      className="inline-flex items-center gap-2 bg-[#1b1b1b] dark:bg-white text-white dark:text-[#1b1b1b] px-6 py-3 rounded-full font-medium hover:bg-[#303030] dark:hover:bg-[#e2e2e2] transition-colors"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      Go to Check-in
+                    </Link>
+                  </div>
+                </div>
               </div>
             )}
           </motion.div>

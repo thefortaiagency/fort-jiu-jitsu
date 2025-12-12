@@ -10,7 +10,7 @@ import MemberInfo from './components/MemberInfo';
 import ChoosePlan from './components/ChoosePlan';
 import WaiverPayment from './components/WaiverPayment';
 
-export type MembershipPlan = 'kids' | 'adult' | 'family' | 'drop-in';
+export type MembershipPlan = 'kids' | 'adult' | 'family' | 'drop-in' | 'morning-rolls';
 export type BillingPeriod = 'monthly' | 'annual';
 export type ExperienceLevel = 'never' | 'beginner' | 'intermediate' | 'advanced';
 
