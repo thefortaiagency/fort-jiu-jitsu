@@ -1,23 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Cache busting - force fresh assets
-  generateBuildId: async () => {
-    return `build-${Date.now()}`;
-  },
-  headers: async () => {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-    ];
-  },
+  // Let Next.js handle caching naturally with content hashes
+  // Static assets get immutable caching, HTML pages get revalidation
 };
 
 export default nextConfig;
