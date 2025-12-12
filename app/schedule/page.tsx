@@ -222,11 +222,15 @@ export default function SchedulePage() {
 
           {/* Drop-in */}
           <FadeIn delay={0.3} className="mt-12 text-center">
-            <div className="inline-flex items-center gap-4 px-8 py-4 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl border border-[#e2e2e2] dark:border-[#303030]">
+            <Link
+              href="/check-in?mode=dropin"
+              className="inline-flex items-center gap-4 px-8 py-4 bg-[#f9f9f9] dark:bg-[#0a0a0a] rounded-2xl border border-[#e2e2e2] dark:border-[#303030] hover:border-[#1b1b1b] dark:hover:border-white transition-all hover:scale-105 group"
+            >
               <span className="text-[#5e5e5e] dark:text-[#b9b9b9]">Drop-in rate:</span>
               <span className="text-2xl font-bold text-[#1b1b1b] dark:text-white">$20</span>
               <span className="text-[#777777]">per class</span>
-            </div>
+              <ArrowRight className="w-5 h-5 text-[#777777] group-hover:text-[#1b1b1b] dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
+            </Link>
           </FadeIn>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import MemberLogin from './components/MemberLogin';
 import MemberDashboard from './components/MemberDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Phone } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 
@@ -91,6 +92,27 @@ export default function MemberPortal() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-[#1b1b1b] dark:bg-[#0a0a0a] relative z-10">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-6">
+            Questions About Your Membership?
+          </h2>
+          <p className="text-lg text-[#b9b9b9] mb-8">
+            Contact us anytime for help with your account or membership details.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="tel:2604527615"
+              className="inline-flex items-center justify-center gap-2 bg-white text-[#1b1b1b] px-8 py-4 rounded-full font-medium hover:bg-[#e2e2e2] transition-all hover:scale-105"
+            >
+              <Phone className="w-5 h-5" />
+              (260) 452-7615
+            </a>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>
