@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { LocalBusinessJsonLd, CourseJsonLd } from "./components/JsonLd";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
@@ -108,6 +109,7 @@ export default function RootLayout({
         <CourseJsonLd />
         <ServiceWorkerRegistration />
         {children}
+        <Analytics />
         <BJJChatbot />
       </body>
     </html>
