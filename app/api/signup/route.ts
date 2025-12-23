@@ -243,6 +243,8 @@ export async function POST(request: NextRequest) {
       GRAND_OPENING_50: 'GRAND_OPENING_50',
       GRANDOPENING: 'GRAND_OPENING_50',
       FOUNDER: 'FOUNDER_DISCOUNT',
+      HOLIDAY20: 'HOLIDAY20',
+      THEFORCE: 'THEFORCE',
     };
 
     // Build checkout session params

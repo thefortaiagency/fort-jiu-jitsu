@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import { LocalBusinessJsonLd, CourseJsonLd } from "./components/JsonLd";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 import BJJChatbot from "./components/BJJChatbot";
@@ -12,8 +13,9 @@ export const metadata: Metadata = {
     default: "The Fort Jiu-Jitsu | Brazilian Jiu-Jitsu & Wrestling in Fort Wayne, IN",
     template: "%s | The Fort Jiu-Jitsu"
   },
-  description: "Fort Wayne's premier Brazilian Jiu-Jitsu academy. Expert instruction for kids & adults in BJJ and wrestling. Classes Tue & Wed evenings. Start your free trial today!",
+  description: "Fort Wayne's premier Brazilian Jiu-Jitsu academy serving Northeast Indiana. 100+ technique library, expert instruction for kids & adults, morning rolls & evening classes. Join the best BJJ gym in Allen County!",
   keywords: [
+    // Fort Wayne core
     "jiu jitsu fort wayne",
     "brazilian jiu jitsu fort wayne",
     "bjj fort wayne indiana",
@@ -24,9 +26,32 @@ export const metadata: Metadata = {
     "self defense fort wayne",
     "grappling academy indiana",
     "mma training fort wayne",
-    "beginner jiu jitsu",
-    "jiu jitsu near me",
-    "the fort jiu jitsu"
+    "the fort jiu jitsu",
+    // Northeast Indiana expansion
+    "jiu jitsu northeast indiana",
+    "bjj allen county",
+    "martial arts new haven indiana",
+    "jiu jitsu columbia city",
+    "bjj huntington indiana",
+    "wrestling auburn indiana",
+    "martial arts bluffton indiana",
+    "jiu jitsu decatur indiana",
+    "bjj angola indiana",
+    "grappling northeast indiana",
+    // Program-specific
+    "kids martial arts fort wayne",
+    "youth jiu jitsu indiana",
+    "beginner bjj classes",
+    "morning jiu jitsu classes",
+    "gi jiu jitsu training",
+    "private jiu jitsu lessons",
+    // Technique-focused
+    "bjj techniques library",
+    "learn jiu jitsu submissions",
+    "guard passes bjj",
+    "mount escapes jiu jitsu",
+    "armbar technique",
+    "triangle choke training"
   ],
   authors: [{ name: "The Fort Jiu-Jitsu", url: siteUrl }],
   creator: "The Fort Jiu-Jitsu",
@@ -50,25 +75,25 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   openGraph: {
     title: "The Fort Jiu-Jitsu | Brazilian Jiu-Jitsu & Wrestling in Fort Wayne",
-    description: "Fort Wayne's premier Brazilian Jiu-Jitsu academy. Expert instruction for kids & adults. Start your martial arts journey today!",
+    description: "Northeast Indiana's premier BJJ academy with 100+ technique library. Kids & adult classes, morning rolls, private training. Serving Fort Wayne, Allen County & surrounding areas.",
     url: siteUrl,
     siteName: "The Fort Jiu-Jitsu",
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: '/jiu-jitsu.png',
-        width: 783,
-        height: 349,
-        alt: 'The Fort Jiu-Jitsu Logo',
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'The Fort Jiu-Jitsu - Sensei Bot',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
     title: "The Fort Jiu-Jitsu | BJJ & Wrestling in Fort Wayne",
-    description: "Fort Wayne's premier Brazilian Jiu-Jitsu academy. Expert instruction for kids & adults.",
-    images: ['/jiu-jitsu.png'],
+    description: "Northeast Indiana's premier BJJ academy. 100+ techniques, kids & adult classes, morning rolls. Serving Fort Wayne & Allen County.",
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
@@ -109,6 +134,7 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         {children}
         <BJJChatbot />
+        <Analytics />
       </body>
     </html>
   );
