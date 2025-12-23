@@ -20,7 +20,7 @@ const instructors = [
   {
     name: 'Nick Strahm',
     title: 'Instructor',
-    rank: 'Purple Belt',
+    rank: 'Brown Belt',
     nickname: null,
     bio: 'Nick Strahm\'s journey is a testament to the healing power of Jiu-Jitsu. A Marine and Army veteran who served three tours in Iraq, Nick discovered Brazilian Jiu-Jitsu as a way to cope with the challenges of post-traumatic stress. The focus, discipline, and camaraderie he found on the mat not only changed his life but also ignited a passion for helping others. He is particularly passionate about working with beginners and children, creating a welcoming and supportive environment.',
     specialties: ['Beginners', 'Kids Classes', 'Fundamentals'],
